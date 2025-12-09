@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import UserManagementPage from './pages/UserManagement';
+import UserManagementDashboard from './pages/UserManagementDashboard';
 import RolesPage from './pages/Roles';
 import DashboardPage from './pages/Dashboard';
 import NotFound from './pages/NotFound';
@@ -20,8 +21,10 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<UserManagementPage />} />
+            <Route path="/" element={<DashboardPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/user-management" element={<UserManagementDashboard />} />
+            <Route path="/users" element={<UserManagementPage />} />
             <Route path="/roles" element={<RolesPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { NavLink } from '@/components/NavLink';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -34,6 +34,7 @@ interface NavItem {
 interface NavSection {
   icon: React.ElementType;
   label: string;
+  href: string; // Main section link
   items: NavItem[];
 }
 
@@ -44,8 +45,9 @@ const standaloneItems: NavItem[] = [
 const userManagementSection: NavSection = {
   icon: UserCog,
   label: 'User Management',
+  href: '/user-management', // Dashboard link for the section
   items: [
-    { icon: Users, label: 'Manage Users', href: '/' },
+    { icon: Users, label: 'Manage Users', href: '/users' },
     { icon: Shield, label: 'Roles & Permissions', href: '/roles' },
   ],
 };
@@ -67,9 +69,9 @@ export function AppSidebar() {
   const location = useLocation();
   
   // Check if current route is within user management section
-  const isUserManagementActive = userManagementSection.items.some(
-    item => location.pathname === item.href
-  );
+  const isUserManagementActive = 
+    location.pathname === userManagementSection.href ||
+    userManagementSection.items.some(item => location.pathname === item.href);
   
   const [userMgmtOpen, setUserMgmtOpen] = useState(isUserManagementActive);
 
@@ -135,42 +137,51 @@ export function AppSidebar() {
               // When collapsed, show just the section icon with tooltip
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
-                  <NavLink
-                    to="/"
+                  <Link
+                    to={userManagementSection.href}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
                       isUserManagementActive && 'bg-sidebar-accent text-sidebar-foreground'
                     )}
                   >
                     <userManagementSection.icon className="w-5 h-5 flex-shrink-0" />
-                  </NavLink>
+                  </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="bg-sidebar text-sidebar-foreground">
                   {userManagementSection.label}
                 </TooltipContent>
               </Tooltip>
             ) : (
-              // When expanded, show collapsible section
+              // When expanded, show collapsible section with clickable header
               <Collapsible open={userMgmtOpen} onOpenChange={setUserMgmtOpen}>
-                <CollapsibleTrigger className="w-full">
-                  <div
+                <div className="flex items-center">
+                  <Link
+                    to={userManagementSection.href}
                     className={cn(
-                      'flex items-center justify-between px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors cursor-pointer',
-                      isUserManagementActive && 'text-sidebar-foreground'
+                      'flex-1 flex items-center gap-3 px-3 py-2.5 rounded-l-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+                      isUserManagementActive && 'text-sidebar-foreground',
+                      location.pathname === userManagementSection.href && 'bg-sidebar-accent'
                     )}
                   >
-                    <div className="flex items-center gap-3">
-                      <userManagementSection.icon className="w-5 h-5 flex-shrink-0" />
-                      <span className="text-sm font-medium">{userManagementSection.label}</span>
-                    </div>
-                    <ChevronDown
+                    <userManagementSection.icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-sm font-medium">{userManagementSection.label}</span>
+                  </Link>
+                  <CollapsibleTrigger asChild>
+                    <button
                       className={cn(
-                        'w-4 h-4 transition-transform duration-200',
-                        userMgmtOpen && 'rotate-180'
+                        'px-2 py-2.5 rounded-r-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+                        isUserManagementActive && 'text-sidebar-foreground'
                       )}
-                    />
-                  </div>
-                </CollapsibleTrigger>
+                    >
+                      <ChevronDown
+                        className={cn(
+                          'w-4 h-4 transition-transform duration-200',
+                          userMgmtOpen && 'rotate-180'
+                        )}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                </div>
                 <CollapsibleContent className="mt-1 space-y-1">
                   {userManagementSection.items.map((item) => renderNavItem(item, true))}
                 </CollapsibleContent>
