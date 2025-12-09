@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { NavLink } from '@/components/NavLink';
+import { useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -12,10 +13,17 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  UserCog,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface NavItem {
   icon: React.ElementType;
@@ -23,10 +31,26 @@ interface NavItem {
   href: string;
 }
 
-const navItems: NavItem[] = [
+interface NavSection {
+  icon: React.ElementType;
+  label: string;
+  items: NavItem[];
+}
+
+const standaloneItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: Users, label: 'Manage Users', href: '/' },
-  { icon: Shield, label: 'Roles & Permissions', href: '/roles' },
+];
+
+const userManagementSection: NavSection = {
+  icon: UserCog,
+  label: 'User Management',
+  items: [
+    { icon: Users, label: 'Manage Users', href: '/' },
+    { icon: Shield, label: 'Roles & Permissions', href: '/roles' },
+  ],
+};
+
+const otherNavItems: NavItem[] = [
   { icon: BarChart3, label: 'Analytics', href: '/analytics' },
   { icon: Globe, label: 'Integrations', href: '/integrations' },
   { icon: Bell, label: 'Notifications', href: '/notifications' },
@@ -40,6 +64,41 @@ const bottomNavItems: NavItem[] = [
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+  
+  // Check if current route is within user management section
+  const isUserManagementActive = userManagementSection.items.some(
+    item => location.pathname === item.href
+  );
+  
+  const [userMgmtOpen, setUserMgmtOpen] = useState(isUserManagementActive);
+
+  const renderNavItem = (item: NavItem, isNested: boolean = false) => (
+    <Tooltip key={item.href} delayDuration={0}>
+      <TooltipTrigger asChild>
+        <NavLink
+          to={item.href}
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+            isNested && !collapsed && 'ml-4'
+          )}
+          activeClassName="bg-sidebar-accent text-sidebar-foreground"
+        >
+          <item.icon className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && (
+            <span className="text-sm font-medium animate-fade-in">
+              {item.label}
+            </span>
+          )}
+        </NavLink>
+      </TooltipTrigger>
+      {collapsed && (
+        <TooltipContent side="right" className="bg-sidebar text-sidebar-foreground">
+          {item.label}
+        </TooltipContent>
+      )}
+    </Tooltip>
+  );
 
   return (
     <aside
@@ -65,32 +124,63 @@ export function AppSidebar() {
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin">
         <ul className="space-y-1 px-2">
-          {navItems.map((item) => (
-            <li key={item.href}>
+          {/* Standalone items */}
+          {standaloneItems.map((item) => (
+            <li key={item.href}>{renderNavItem(item)}</li>
+          ))}
+
+          {/* User Management Section */}
+          <li>
+            {collapsed ? (
+              // When collapsed, show just the section icon with tooltip
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <NavLink
-                    to={item.href}
+                    to="/"
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors'
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+                      isUserManagementActive && 'bg-sidebar-accent text-sidebar-foreground'
                     )}
-                    activeClassName="bg-sidebar-accent text-sidebar-foreground"
                   >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    {!collapsed && (
-                      <span className="text-sm font-medium animate-fade-in">
-                        {item.label}
-                      </span>
-                    )}
+                    <userManagementSection.icon className="w-5 h-5 flex-shrink-0" />
                   </NavLink>
                 </TooltipTrigger>
-                {collapsed && (
-                  <TooltipContent side="right" className="bg-sidebar text-sidebar-foreground">
-                    {item.label}
-                  </TooltipContent>
-                )}
+                <TooltipContent side="right" className="bg-sidebar text-sidebar-foreground">
+                  {userManagementSection.label}
+                </TooltipContent>
               </Tooltip>
-            </li>
+            ) : (
+              // When expanded, show collapsible section
+              <Collapsible open={userMgmtOpen} onOpenChange={setUserMgmtOpen}>
+                <CollapsibleTrigger className="w-full">
+                  <div
+                    className={cn(
+                      'flex items-center justify-between px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors cursor-pointer',
+                      isUserManagementActive && 'text-sidebar-foreground'
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <userManagementSection.icon className="w-5 h-5 flex-shrink-0" />
+                      <span className="text-sm font-medium">{userManagementSection.label}</span>
+                    </div>
+                    <ChevronDown
+                      className={cn(
+                        'w-4 h-4 transition-transform duration-200',
+                        userMgmtOpen && 'rotate-180'
+                      )}
+                    />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-1 space-y-1">
+                  {userManagementSection.items.map((item) => renderNavItem(item, true))}
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+          </li>
+
+          {/* Other nav items */}
+          {otherNavItems.map((item) => (
+            <li key={item.href}>{renderNavItem(item)}</li>
           ))}
         </ul>
       </nav>
@@ -99,31 +189,7 @@ export function AppSidebar() {
       <div className="border-t border-sidebar-border py-4 px-2">
         <ul className="space-y-1">
           {bottomNavItems.map((item) => (
-            <li key={item.href}>
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <NavLink
-                    to={item.href}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors'
-                    )}
-                    activeClassName="bg-sidebar-accent text-sidebar-foreground"
-                  >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    {!collapsed && (
-                      <span className="text-sm font-medium animate-fade-in">
-                        {item.label}
-                      </span>
-                    )}
-                  </NavLink>
-                </TooltipTrigger>
-                {collapsed && (
-                  <TooltipContent side="right" className="bg-sidebar text-sidebar-foreground">
-                    {item.label}
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </li>
+            <li key={item.href}>{renderNavItem(item)}</li>
           ))}
         </ul>
       </div>
