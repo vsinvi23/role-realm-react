@@ -1,48 +1,160 @@
+import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ArticleEditor } from '@/components/articles/ArticleEditor';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { Article, WorkflowStatus } from '@/types/content';
+import { WorkflowStatusBar } from '@/components/shared/WorkflowStatusBar';
+import { ReviewActionsPanel } from '@/components/shared/ReviewActionsPanel';
+import { ReviewerCommentThread } from '@/components/shared/ReviewerCommentThread';
+import { Article, WorkflowStatus, ReviewComment } from '@/types/content';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { selectArticle, setFilters, updateArticle, updateArticleStatus } from '@/store/slices/articleSlice';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Plus, Pencil, Eye } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Search, Plus, Pencil, Eye, MessageSquare, GitBranch, FileText, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 export default function ArticleManagement() {
   const dispatch = useAppDispatch();
   const { articles, selectedArticleId, filters, saving } = useAppSelector(state => state.articles);
+  const [reviewComments, setReviewComments] = useState<Record<string, ReviewComment[]>>({});
+  const [activeTab, setActiveTab] = useState<'content' | 'workflow'>('content');
   
   const selectedArticle = articles.find(a => a.id === selectedArticleId);
   const filteredArticles = articles.filter(a => 
     a.title.toLowerCase().includes(filters.search.toLowerCase())
   );
 
-  const handleWorkflowAction = (action: string) => {
+  const handleWorkflowAction = (action: string, comment?: string) => {
     if (!selectedArticleId) return;
     const statusMap: Record<string, WorkflowStatus> = {
       submit: 'submitted', approve: 'approved', reject: 'rejected', publish: 'published', request_changes: 'draft',
     };
     if (statusMap[action]) {
       dispatch(updateArticleStatus({ articleId: selectedArticleId, status: statusMap[action] }));
-      toast.success(`Article ${action}ed successfully`);
+      
+      // Add system comment for workflow action
+      if (comment) {
+        handleAddComment(`**${action.replace('_', ' ').toUpperCase()}**: ${comment}`);
+      }
+      
+      toast.success(`Article ${action.replace('_', ' ')} successfully`);
     }
+  };
+
+  const handleAddComment = (content: string, parentId?: string) => {
+    if (!selectedArticleId) return;
+    
+    const newComment: ReviewComment = {
+      id: `comment-${Date.now()}`,
+      authorId: 'current-user',
+      authorName: 'Current User',
+      content,
+      createdAt: new Date().toISOString(),
+      replies: [],
+    };
+
+    setReviewComments(prev => {
+      const articleComments = prev[selectedArticleId] || [];
+      if (parentId) {
+        // Add as reply
+        return {
+          ...prev,
+          [selectedArticleId]: articleComments.map(c => 
+            c.id === parentId 
+              ? { ...c, replies: [...(c.replies || []), newComment] }
+              : c
+          ),
+        };
+      }
+      return {
+        ...prev,
+        [selectedArticleId]: [...articleComments, newComment],
+      };
+    });
   };
 
   const handleSave = (article: Article) => {
     dispatch(updateArticle(article));
-    dispatch(selectArticle(null));
     toast.success('Article saved');
   };
 
   if (selectedArticle) {
+    const articleComments = reviewComments[selectedArticle.id] || [];
+    
     return (
       <DashboardLayout>
-        <Button variant="ghost" onClick={() => dispatch(selectArticle(null))} className="mb-4">← Back to Articles</Button>
-        <ArticleEditor article={selectedArticle} onSave={handleSave} onWorkflowAction={handleWorkflowAction} />
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Button variant="ghost" onClick={() => dispatch(selectArticle(null))} className="mb-2">← Back to Articles</Button>
+              <h1 className="text-2xl font-bold">{selectedArticle.title}</h1>
+            </div>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'content' | 'workflow')}>
+            <TabsList>
+              <TabsTrigger value="content" className="gap-2">
+                <FileText className="w-4 h-4" />
+                Article Content
+              </TabsTrigger>
+              <TabsTrigger value="workflow" className="gap-2">
+                <GitBranch className="w-4 h-4" />
+                Workflow & Review
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="content" className="mt-6">
+              <ArticleEditor article={selectedArticle} onSave={handleSave} onWorkflowAction={handleWorkflowAction} />
+            </TabsContent>
+
+            <TabsContent value="workflow" className="mt-6">
+              <div className="grid grid-cols-12 gap-6">
+                <div className="col-span-12 lg:col-span-7">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <GitBranch className="w-5 h-5" />
+                        Workflow Progress
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <WorkflowStatusBar currentStatus={selectedArticle.status} />
+                      <div className="pt-4 border-t">
+                        <h4 className="text-sm font-medium mb-3">Available Actions</h4>
+                        <ReviewActionsPanel 
+                          currentStatus={selectedArticle.status} 
+                          onAction={handleWorkflowAction} 
+                          isLoading={saving} 
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="col-span-12 lg:col-span-5">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        Review Comments ({articleComments.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="max-h-[500px] overflow-y-auto">
+                      <ReviewerCommentThread 
+                        comments={articleComments} 
+                        onAddComment={handleAddComment} 
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </DashboardLayout>
     );
   }
