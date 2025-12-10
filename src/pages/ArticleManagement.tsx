@@ -1,30 +1,48 @@
-import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ArticleEditor } from '@/components/articles/ArticleEditor';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { mockArticles } from '@/data/mockContent';
-import { Article } from '@/types/content';
+import { Article, WorkflowStatus } from '@/types/content';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { selectArticle, setFilters, updateArticle, updateArticleStatus } from '@/store/slices/articleSlice';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Plus, Pencil, Eye, Trash2 } from 'lucide-react';
+import { Search, Plus, Pencil, Eye } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function ArticleManagement() {
-  const [articles] = useState(mockArticles);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-
+  const dispatch = useAppDispatch();
+  const { articles, selectedArticleId, filters, saving } = useAppSelector(state => state.articles);
+  
+  const selectedArticle = articles.find(a => a.id === selectedArticleId);
   const filteredArticles = articles.filter(a => 
-    a.title.toLowerCase().includes(searchQuery.toLowerCase())
+    a.title.toLowerCase().includes(filters.search.toLowerCase())
   );
+
+  const handleWorkflowAction = (action: string) => {
+    if (!selectedArticleId) return;
+    const statusMap: Record<string, WorkflowStatus> = {
+      submit: 'submitted', approve: 'approved', reject: 'rejected', publish: 'published', request_changes: 'draft',
+    };
+    if (statusMap[action]) {
+      dispatch(updateArticleStatus({ articleId: selectedArticleId, status: statusMap[action] }));
+      toast.success(`Article ${action}ed successfully`);
+    }
+  };
+
+  const handleSave = (article: Article) => {
+    dispatch(updateArticle(article));
+    dispatch(selectArticle(null));
+    toast.success('Article saved');
+  };
 
   if (selectedArticle) {
     return (
       <DashboardLayout>
-        <Button variant="ghost" onClick={() => setSelectedArticle(null)} className="mb-4">← Back to Articles</Button>
-        <ArticleEditor article={selectedArticle} onSave={() => setSelectedArticle(null)} onWorkflowAction={() => {}} />
+        <Button variant="ghost" onClick={() => dispatch(selectArticle(null))} className="mb-4">← Back to Articles</Button>
+        <ArticleEditor article={selectedArticle} onSave={handleSave} onWorkflowAction={handleWorkflowAction} />
       </DashboardLayout>
     );
   }
@@ -42,7 +60,7 @@ export default function ArticleManagement() {
 
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search articles..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+          <Input placeholder="Search articles..." value={filters.search} onChange={(e) => dispatch(setFilters({ search: e.target.value }))} className="pl-9" />
         </div>
 
         <Card>
@@ -68,7 +86,7 @@ export default function ArticleManagement() {
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(article.updatedAt), 'PP')}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedArticle(article)}><Pencil className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => dispatch(selectArticle(article.id))}><Pencil className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="w-4 h-4" /></Button>
                       </div>
                     </TableCell>
