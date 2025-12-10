@@ -79,11 +79,17 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   
+  // Check if current route is within content section
+  const isContentActive = 
+    location.pathname === contentSection.href ||
+    contentSection.items.some(item => location.pathname === item.href);
+  
   // Check if current route is within user management section
   const isUserManagementActive = 
     location.pathname === userManagementSection.href ||
     userManagementSection.items.some(item => location.pathname === item.href);
   
+  const [contentOpen, setContentOpen] = useState(isContentActive);
   const [userMgmtOpen, setUserMgmtOpen] = useState(isUserManagementActive);
 
   const renderNavItem = (item: NavItem, isNested: boolean = false) => (
@@ -111,6 +117,68 @@ export function AppSidebar() {
         </TooltipContent>
       )}
     </Tooltip>
+  );
+
+  const renderSection = (
+    section: NavSection,
+    isActive: boolean,
+    isOpen: boolean,
+    setIsOpen: (open: boolean) => void
+  ) => (
+    <li>
+      {collapsed ? (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Link
+              to={section.href}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+                isActive && 'bg-sidebar-accent text-sidebar-foreground'
+              )}
+            >
+              <section.icon className="w-5 h-5 flex-shrink-0" />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="bg-sidebar text-sidebar-foreground">
+            {section.label}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <div className="flex items-center">
+            <Link
+              to={section.href}
+              className={cn(
+                'flex-1 flex items-center gap-3 px-3 py-2.5 rounded-l-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+                isActive && 'text-sidebar-foreground',
+                location.pathname === section.href && 'bg-sidebar-accent'
+              )}
+            >
+              <section.icon className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">{section.label}</span>
+            </Link>
+            <CollapsibleTrigger asChild>
+              <button
+                className={cn(
+                  'px-2 py-2.5 rounded-r-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+                  isActive && 'text-sidebar-foreground'
+                )}
+              >
+                <ChevronDown
+                  className={cn(
+                    'w-4 h-4 transition-transform duration-200',
+                    isOpen && 'rotate-180'
+                  )}
+                />
+              </button>
+            </CollapsibleTrigger>
+          </div>
+          <CollapsibleContent className="mt-1 space-y-1">
+            {section.items.map((item) => renderNavItem(item, true))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+    </li>
   );
 
   return (
@@ -142,63 +210,11 @@ export function AppSidebar() {
             <li key={item.href}>{renderNavItem(item)}</li>
           ))}
 
+          {/* Content Section */}
+          {renderSection(contentSection, isContentActive, contentOpen, setContentOpen)}
+
           {/* User Management Section */}
-          <li>
-            {collapsed ? (
-              // When collapsed, show just the section icon with tooltip
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <Link
-                    to={userManagementSection.href}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
-                      isUserManagementActive && 'bg-sidebar-accent text-sidebar-foreground'
-                    )}
-                  >
-                    <userManagementSection.icon className="w-5 h-5 flex-shrink-0" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="bg-sidebar text-sidebar-foreground">
-                  {userManagementSection.label}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              // When expanded, show collapsible section with clickable header
-              <Collapsible open={userMgmtOpen} onOpenChange={setUserMgmtOpen}>
-                <div className="flex items-center">
-                  <Link
-                    to={userManagementSection.href}
-                    className={cn(
-                      'flex-1 flex items-center gap-3 px-3 py-2.5 rounded-l-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
-                      isUserManagementActive && 'text-sidebar-foreground',
-                      location.pathname === userManagementSection.href && 'bg-sidebar-accent'
-                    )}
-                  >
-                    <userManagementSection.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="text-sm font-medium">{userManagementSection.label}</span>
-                  </Link>
-                  <CollapsibleTrigger asChild>
-                    <button
-                      className={cn(
-                        'px-2 py-2.5 rounded-r-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
-                        isUserManagementActive && 'text-sidebar-foreground'
-                      )}
-                    >
-                      <ChevronDown
-                        className={cn(
-                          'w-4 h-4 transition-transform duration-200',
-                          userMgmtOpen && 'rotate-180'
-                        )}
-                      />
-                    </button>
-                  </CollapsibleTrigger>
-                </div>
-                <CollapsibleContent className="mt-1 space-y-1">
-                  {userManagementSection.items.map((item) => renderNavItem(item, true))}
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-          </li>
+          {renderSection(userManagementSection, isUserManagementActive, userMgmtOpen, setUserMgmtOpen)}
 
           {/* Other nav items */}
           {otherNavItems.map((item) => (
