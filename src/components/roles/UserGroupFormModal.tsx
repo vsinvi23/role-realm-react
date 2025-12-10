@@ -103,6 +103,12 @@ export function UserGroupFormModal({
     onClose();
   };
 
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      handleClose();
+    }
+  };
+
   const toggleCategory = (categoryId: string) => {
     const current = form.getValues('selectedCategories');
     if (current.includes(categoryId)) {
@@ -113,7 +119,7 @@ export function UserGroupFormModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
