@@ -9,6 +9,9 @@ import UserManagementPage from './pages/UserManagement';
 import UserManagementDashboard from './pages/UserManagementDashboard';
 import RolesPage from './pages/Roles';
 import DashboardPage from './pages/Dashboard';
+import ContentManagement from './pages/ContentManagement';
+import CourseManagement from './pages/CourseManagement';
+import ArticleManagement from './pages/ArticleManagement';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -26,7 +29,9 @@ const App = () => (
             <Route path="/user-management" element={<UserManagementDashboard />} />
             <Route path="/users" element={<UserManagementPage />} />
             <Route path="/roles" element={<RolesPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/content" element={<ContentManagement />} />
+            <Route path="/courses" element={<CourseManagement />} />
+            <Route path="/articles" element={<ArticleManagement />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

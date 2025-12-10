@@ -38,14 +38,27 @@ interface NavSection {
   items: NavItem[];
 }
 
+import { FolderTree, BookOpen, FileText } from 'lucide-react';
+
 const standaloneItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
 ];
 
+const contentSection: NavSection = {
+  icon: FolderTree,
+  label: 'Content',
+  href: '/content',
+  items: [
+    { icon: FolderTree, label: 'Categories', href: '/content' },
+    { icon: BookOpen, label: 'Courses', href: '/courses' },
+    { icon: FileText, label: 'Articles', href: '/articles' },
+  ],
+};
+
 const userManagementSection: NavSection = {
   icon: UserCog,
   label: 'User Management',
-  href: '/user-management', // Dashboard link for the section
+  href: '/user-management',
   items: [
     { icon: Users, label: 'Manage Users', href: '/users' },
     { icon: Shield, label: 'Roles & Permissions', href: '/roles' },
@@ -54,9 +67,7 @@ const userManagementSection: NavSection = {
 
 const otherNavItems: NavItem[] = [
   { icon: BarChart3, label: 'Analytics', href: '/analytics' },
-  { icon: Globe, label: 'Integrations', href: '/integrations' },
   { icon: Bell, label: 'Notifications', href: '/notifications' },
-  { icon: Search, label: 'Search', href: '/search' },
 ];
 
 const bottomNavItems: NavItem[] = [
