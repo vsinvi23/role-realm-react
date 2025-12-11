@@ -14,6 +14,7 @@ import CourseManagement from './pages/CourseManagement';
 import ArticleManagement from './pages/ArticleManagement';
 import MyTasks from './pages/MyTasks';
 import Analytics from './pages/Analytics';
+import PublicHome from './pages/PublicHome';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -26,7 +27,11 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<ContentManagement />} />
+            {/* Public Routes */}
+            <Route path="/" element={<PublicHome />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<ContentManagement />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/user-management" element={<UserManagementDashboard />} />
             <Route path="/users" element={<UserManagementPage />} />
