@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, BookOpen, Code, Zap, Users, GraduationCap, Shield, Server, Cloud, ChevronRight, Star, Clock, Play } from 'lucide-react';
+import { Search, BookOpen, Code, Zap, Shield, Server, Cloud, ChevronRight, Star, Clock, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 
 const popularTags = [
   'System Design',
@@ -93,93 +93,25 @@ const articles = [
   { id: 6, title: 'GraphQL vs REST: Complete Guide', category: 'Backend', readTime: '9 min', views: 11000 },
 ];
 
-const technologies = ['DSA', 'Practice Problems', 'C', 'C++', 'Java', 'Python', 'JavaScript', 'Data Science', 'Machine Learning', 'Linux', 'DevOps', 'SQL', 'Web Development'];
-
 const PublicHome = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all');
-  const { isAuthenticated, user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Public Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-8">
-              <h1 className="text-2xl font-bold text-primary">TechLearn</h1>
-              <nav className="hidden md:flex items-center gap-6">
-                <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                  Courses <ChevronRight className="h-3 w-3 rotate-90" />
-                </button>
-                <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                  Tutorials <ChevronRight className="h-3 w-3 rotate-90" />
-                </button>
-                <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                  Practice <ChevronRight className="h-3 w-3 rotate-90" />
-                </button>
-                <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                  Jobs
-                </button>
-              </nav>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search..." className="pl-9" />
-              </div>
-              {isAuthenticated ? (
-                <>
-                  <Link to="/dashboard">
-                    <Button variant="outline" size="sm">Dashboard</Button>
-                  </Link>
-                  <Button size="sm" variant="ghost" onClick={logout}>{user?.name}</Button>
-                </>
-              ) : (
-                <>
-                  <Link to="/auth">
-                    <Button variant="outline" size="sm">Sign In</Button>
-                  </Link>
-                  <Link to="/auth">
-                    <Button size="sm">Get Started</Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-        {/* Technology Navigation */}
-        <div className="border-t bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center gap-4 overflow-x-auto py-2 scrollbar-hide">
-              {technologies.map((tech) => (
-                <Link
-                  key={tech}
-                  to={`/technology/${tech.toLowerCase().replace(/\s+/g, '-').replace(/\//g, '')}`}
-                  className="text-xs font-medium text-muted-foreground hover:text-primary whitespace-nowrap transition-colors"
-                >
-                  {tech}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background py-16 md:py-24">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+    <PublicLayout>
+      <div className="space-y-8">
+        {/* Hero Section */}
+        <section className="text-center py-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Learn tech skills <span className="text-primary">3x faster</span> with the
             <br className="hidden md:block" /> platform that <span className="text-primary">adapts</span> to you.
-          </h2>
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+          </h1>
+          <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
             Master in-demand skills with structured learning paths, hands-on projects, and interview preparation.
           </p>
           
           {/* Search Box */}
           <div className="max-w-2xl mx-auto mb-6">
-            <div className="relative bg-card border rounded-xl shadow-lg">
+            <div className="relative bg-card border rounded-xl shadow-sm">
               <div className="flex items-center p-2">
                 <Zap className="h-5 w-5 text-primary ml-3" />
                 <Input
@@ -196,40 +128,26 @@ const PublicHome = () => {
           </div>
 
           {/* Quick Tags */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-            <span className="text-sm text-muted-foreground">Or try a personalized course</span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="text-sm text-muted-foreground">Popular:</span>
             {popularTags.map((tag) => (
               <Badge key={tag} variant="secondary" className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
                 {tag} <ChevronRight className="h-3 w-3 ml-1" />
               </Badge>
             ))}
           </div>
+        </section>
 
-          {/* Trust Indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-8 text-muted-foreground">
-            <span className="text-sm">Join <strong className="text-foreground">2.8 million</strong> developers working at</span>
-            <div className="flex items-center gap-6 text-muted-foreground/60 font-semibold">
-              <span>Meta</span>
-              <span>Amazon</span>
-              <span>Google</span>
-              <span>Netflix</span>
-              <span>Stripe</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Course Categories */}
-      <section className="py-12 bg-muted/30">
-        <div className="container mx-auto px-4">
+        {/* Course Categories */}
+        <section>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {courseCategories.map((cat) => (
               <Link key={cat.id} to={`/category/${cat.id}`}>
                 <Card className="cursor-pointer hover:shadow-md transition-shadow group h-full">
-                  <CardContent className="p-6">
+                  <CardContent className="p-5">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                        <BookOpen className="h-6 w-6 text-primary" />
+                        <BookOpen className="h-5 w-5 text-primary" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground">{cat.name}</h3>
@@ -241,28 +159,26 @@ const PublicHome = () => {
               </Link>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Learning Paths by Role */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
+        {/* Learning Paths by Role */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-2xl font-bold text-foreground">Learning Paths by Role</h3>
-              <p className="text-muted-foreground">Comprehensive tracks designed for your career goals</p>
+              <h2 className="text-xl font-bold text-foreground">Learning Paths by Role</h2>
+              <p className="text-muted-foreground text-sm">Comprehensive tracks designed for your career goals</p>
             </div>
-            <Button variant="outline">View All Paths</Button>
+            <Button variant="outline" size="sm">View All Paths</Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {learningPaths.map((path) => (
               <Link key={path.id} to={`/path/${path.id === 1 ? 'sde' : path.id === 2 ? 'system-architect' : path.id === 3 ? 'security-architect' : path.id === 4 ? 'devops' : path.id === 5 ? 'data-engineer' : 'full-stack'}`}>
-                <Card className="cursor-pointer hover:shadow-lg transition-all group overflow-hidden h-full">
-                  <CardContent className="p-6">
+                <Card className="cursor-pointer hover:shadow-md transition-all group h-full">
+                  <CardContent className="p-5">
                     <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-xl ${path.color} text-white shadow-lg`}>
-                        <path.icon className="h-6 w-6" />
+                      <div className={`p-3 rounded-xl ${path.color} text-white shadow-sm`}>
+                        <path.icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">
@@ -284,21 +200,19 @@ const PublicHome = () => {
               </Link>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Popular Courses */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
+        {/* Popular Courses */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-2xl font-bold text-foreground">Popular Roadmaps & Learning Guides</h3>
-              <p className="text-muted-foreground">Trending resources on in-demand topics</p>
+              <h2 className="text-xl font-bold text-foreground">Popular Courses</h2>
+              <p className="text-muted-foreground text-sm">Trending resources on in-demand topics</p>
             </div>
-            <Button variant="outline">View All</Button>
+            <Button variant="outline" size="sm">View All</Button>
           </div>
 
-          <Tabs defaultValue="all" className="mb-8">
+          <Tabs defaultValue="all" className="mb-6">
             <TabsList>
               <TabsTrigger value="all">Most Popular</TabsTrigger>
               <TabsTrigger value="interview">Interview Prep</TabsTrigger>
@@ -307,10 +221,10 @@ const PublicHome = () => {
             </TabsList>
           </Tabs>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {featuredCourses.map((course) => (
-              <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer">
-                <div className="h-32 bg-primary p-4 flex items-end">
+              <Card key={course.id} className="overflow-hidden hover:shadow-md transition-shadow group cursor-pointer">
+                <div className="h-28 bg-primary p-4 flex items-end">
                   <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-0">
                     <Play className="h-3 w-3 mr-1" /> Course
                   </Badge>
@@ -342,24 +256,22 @@ const PublicHome = () => {
               </Card>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Articles & Tutorials */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
+        {/* Articles & Tutorials */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-2xl font-bold text-foreground">Articles & Tutorials</h3>
-              <p className="text-muted-foreground">Latest insights and guides from industry experts</p>
+              <h2 className="text-xl font-bold text-foreground">Articles & Tutorials</h2>
+              <p className="text-muted-foreground text-sm">Latest insights and guides from industry experts</p>
             </div>
-            <Button variant="outline">Browse All</Button>
+            <Button variant="outline" size="sm">Browse All</Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {articles.map((article) => (
               <Card key={article.id} className="hover:shadow-md transition-shadow cursor-pointer group">
-                <CardContent className="p-6">
+                <CardContent className="p-5">
                   <Badge variant="secondary" className="mb-3">{article.category}</Badge>
                   <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-2">
                     {article.title}
@@ -374,14 +286,12 @@ const PublicHome = () => {
               </Card>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
-          <h3 className="text-3xl font-bold mb-4">Ready to accelerate your learning?</h3>
-          <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">
+        {/* CTA Section */}
+        <section className="rounded-xl bg-primary text-primary-foreground p-8 text-center">
+          <h3 className="text-2xl font-bold mb-3">Ready to accelerate your learning?</h3>
+          <p className="text-primary-foreground/80 mb-6 max-w-xl mx-auto">
             Join millions of developers who are mastering new skills and advancing their careers.
           </p>
           <div className="flex items-center justify-center gap-4">
@@ -392,56 +302,9 @@ const PublicHome = () => {
               View Pricing
             </Button>
           </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t py-12 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Courses</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="hover:text-foreground cursor-pointer">Course Bytes</li>
-                <li className="hover:text-foreground cursor-pointer">Interview Prep</li>
-                <li className="hover:text-foreground cursor-pointer">Learning Paths</li>
-                <li className="hover:text-foreground cursor-pointer">Certifications</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Tutorials</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="hover:text-foreground cursor-pointer">Web Development</li>
-                <li className="hover:text-foreground cursor-pointer">Data Science</li>
-                <li className="hover:text-foreground cursor-pointer">DevOps</li>
-                <li className="hover:text-foreground cursor-pointer">System Design</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Resources</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="hover:text-foreground cursor-pointer">Practice Problems</li>
-                <li className="hover:text-foreground cursor-pointer">Blog</li>
-                <li className="hover:text-foreground cursor-pointer">Community</li>
-                <li className="hover:text-foreground cursor-pointer">Help Center</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Company</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="hover:text-foreground cursor-pointer">About</li>
-                <li className="hover:text-foreground cursor-pointer">Careers</li>
-                <li className="hover:text-foreground cursor-pointer">Contact</li>
-                <li className="hover:text-foreground cursor-pointer">Privacy</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            © 2024 TechLearn. All rights reserved.
-          </div>
-        </div>
-      </footer>
-    </div>
+        </section>
+      </div>
+    </PublicLayout>
   );
 };
 
