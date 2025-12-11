@@ -169,6 +169,17 @@ const ArticleViewPage = () => {
                   <ThumbsUp className="h-4 w-4" />
                   {article.likes} likes
                 </span>
+                <div className="flex items-center gap-1 ml-2 border-l border-border pl-4">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary" title="Save">
+                    <Bookmark className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary" title="Share">
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary" title="Discussion">
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -242,27 +253,8 @@ const ArticleViewPage = () => {
               })}
             </article>
 
-            {/* Right Sidebar - Actions & Tags */}
+            {/* Right Sidebar - Tags */}
             <aside className="space-y-4 hidden lg:block">
-              {/* Actions */}
-              <Card className="border-border">
-                <CardContent className="p-4 space-y-3">
-                  <Button variant="outline" size="sm" className="w-full justify-start gap-2">
-                    <Bookmark className="h-4 w-4" />
-                    Save
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start gap-2">
-                    <Share2 className="h-4 w-4" />
-                    Share
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Discuss
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Tags */}
               <Card className="border-border">
                 <CardContent className="p-4">
                   <h4 className="font-semibold text-foreground mb-3 text-sm">Tags</h4>
