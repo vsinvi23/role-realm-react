@@ -43,18 +43,9 @@ import { FolderTree, BookOpen, FileText, ListTodo } from 'lucide-react';
 const standaloneItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: ListTodo, label: 'My Tasks', href: '/my-tasks' },
+  { icon: BookOpen, label: 'Courses', href: '/courses' },
+  { icon: FileText, label: 'Articles', href: '/articles' },
 ];
-
-const contentSection: NavSection = {
-  icon: FolderTree,
-  label: 'Content',
-  href: '/content',
-  items: [
-    { icon: FolderTree, label: 'Categories', href: '/content' },
-    { icon: BookOpen, label: 'Courses', href: '/courses' },
-    { icon: FileText, label: 'Articles', href: '/articles' },
-  ],
-};
 
 const userManagementSection: NavSection = {
   icon: UserCog,
@@ -66,13 +57,21 @@ const userManagementSection: NavSection = {
   ],
 };
 
+const settingsSection: NavSection = {
+  icon: Settings,
+  label: 'Settings',
+  href: '/settings',
+  items: [
+    { icon: FolderTree, label: 'Category Management', href: '/content' },
+    { icon: Globe, label: 'Web Settings', href: '/web-settings' },
+  ],
+};
+
 const otherNavItems: NavItem[] = [
   { icon: BarChart3, label: 'Analytics', href: '/analytics' },
-  { icon: Bell, label: 'Notifications', href: '/notifications' },
 ];
 
 const bottomNavItems: NavItem[] = [
-  { icon: Settings, label: 'Settings', href: '/settings' },
   { icon: HelpCircle, label: 'Help', href: '/help' },
 ];
 
@@ -80,18 +79,18 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   
-  // Check if current route is within content section
-  const isContentActive = 
-    location.pathname === contentSection.href ||
-    contentSection.items.some(item => location.pathname === item.href);
-  
   // Check if current route is within user management section
   const isUserManagementActive = 
     location.pathname === userManagementSection.href ||
     userManagementSection.items.some(item => location.pathname === item.href);
   
-  const [contentOpen, setContentOpen] = useState(isContentActive);
+  // Check if current route is within settings section
+  const isSettingsActive = 
+    location.pathname === settingsSection.href ||
+    settingsSection.items.some(item => location.pathname === item.href);
+  
   const [userMgmtOpen, setUserMgmtOpen] = useState(isUserManagementActive);
+  const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
 
   const renderNavItem = (item: NavItem, isNested: boolean = false) => (
     <Tooltip key={item.href} delayDuration={0}>
@@ -211,11 +210,11 @@ export function AppSidebar() {
             <li key={item.href}>{renderNavItem(item)}</li>
           ))}
 
-          {/* Content Section */}
-          {renderSection(contentSection, isContentActive, contentOpen, setContentOpen)}
-
           {/* User Management Section */}
           {renderSection(userManagementSection, isUserManagementActive, userMgmtOpen, setUserMgmtOpen)}
+
+          {/* Settings Section */}
+          {renderSection(settingsSection, isSettingsActive, settingsOpen, setSettingsOpen)}
 
           {/* Other nav items */}
           {otherNavItems.map((item) => (
