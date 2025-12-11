@@ -38,10 +38,11 @@ interface NavSection {
   items: NavItem[];
 }
 
-import { FolderTree, BookOpen, FileText } from 'lucide-react';
+import { FolderTree, BookOpen, FileText, ClipboardCheck } from 'lucide-react';
 
 const standaloneItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+  { icon: ClipboardCheck, label: 'Review Queue', href: '/review-queue' },
 ];
 
 const contentSection: NavSection = {
