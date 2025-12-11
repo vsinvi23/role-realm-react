@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, BookOpen, Code, Zap, Shield, Server, Cloud, ChevronRight, Star, Clock, Play } from 'lucide-react';
+import { Search, BookOpen, Code, Zap, Shield, Server, Cloud, ChevronRight, Star, Clock, Play, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -85,12 +85,12 @@ const featuredCourses = [
 ];
 
 const articles = [
-  { id: 1, title: 'Understanding Microservices Architecture', category: 'System Design', readTime: '8 min', views: 12400 },
-  { id: 2, title: 'Top 50 Coding Interview Questions', category: 'Interview Prep', readTime: '15 min', views: 45600 },
-  { id: 3, title: 'Kubernetes Best Practices 2024', category: 'DevOps', readTime: '10 min', views: 8900 },
-  { id: 4, title: 'Machine Learning Fundamentals', category: 'AI/ML', readTime: '12 min', views: 15200 },
-  { id: 5, title: 'Security Best Practices for Cloud', category: 'Security', readTime: '7 min', views: 6300 },
-  { id: 6, title: 'GraphQL vs REST: Complete Guide', category: 'Backend', readTime: '9 min', views: 11000 },
+  { id: 1, title: 'Understanding Microservices Architecture', slug: 'understanding-microservices-architecture', category: 'System Design', readTime: '8 min', views: 12400 },
+  { id: 2, title: 'Top 50 Coding Interview Questions', slug: 'top-50-coding-interview-questions', category: 'Interview Prep', readTime: '15 min', views: 45600 },
+  { id: 3, title: 'Kubernetes Best Practices 2024', slug: 'kubernetes-best-practices-2024', category: 'DevOps', readTime: '10 min', views: 8900 },
+  { id: 4, title: 'Machine Learning Fundamentals', slug: 'machine-learning-fundamentals', category: 'AI/ML', readTime: '12 min', views: 15200 },
+  { id: 5, title: 'Security Best Practices for Cloud', slug: 'security-best-practices-cloud', category: 'Security', readTime: '7 min', views: 6300 },
+  { id: 6, title: 'GraphQL vs REST: Complete Guide', slug: 'graphql-vs-rest-complete-guide', category: 'Backend', readTime: '9 min', views: 11000 },
 ];
 
 const PublicHome = () => {
@@ -223,33 +223,31 @@ const PublicHome = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {featuredCourses.map((course) => (
-              <Card key={course.id} className="overflow-hidden hover:shadow-md transition-shadow group cursor-pointer">
-                <div className="h-28 bg-primary p-4 flex items-end">
-                  <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-0">
-                    <Play className="h-3 w-3 mr-1" /> Course
-                  </Badge>
+              <Card key={course.id} className="hover:shadow-md transition-shadow cursor-pointer group overflow-hidden">
+                <div className="p-4 bg-primary/10">
+                  <h4 className="font-semibold text-primary text-center line-clamp-2">{course.title}</h4>
                 </div>
                 <CardContent className="p-4">
-                  <h4 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors mb-2">
-                    {course.title}
-                  </h4>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                    {course.description}
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{course.description}</p>
+                  <div className="flex items-center gap-2 text-sm mb-2">
+                    <Badge variant="secondary">{course.level}</Badge>
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Clock className="h-3 w-3" /> {course.duration}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2 text-sm">
                     <span className="flex items-center gap-1 text-warning">
                       <Star className="h-3 w-3 fill-current" /> {course.rating}
                     </span>
-                    <span className="text-muted-foreground">•</span>
-                    <span className="text-muted-foreground">{course.students.toLocaleString()} students</span>
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Users className="h-3 w-3" /> {course.students.toLocaleString()}
+                    </span>
                   </div>
                 </CardContent>
                 <CardFooter className="p-4 pt-0">
                   <div className="flex flex-wrap gap-1">
                     {course.tags.slice(0, 2).map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
+                      <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
                     ))}
                   </div>
                 </CardFooter>
@@ -270,20 +268,22 @@ const PublicHome = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {articles.map((article) => (
-              <Card key={article.id} className="hover:shadow-md transition-shadow cursor-pointer group">
-                <CardContent className="p-5">
-                  <Badge variant="secondary" className="mb-3">{article.category}</Badge>
-                  <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-2">
-                    {article.title}
-                  </h4>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> {article.readTime}
-                    </span>
-                    <span>{article.views.toLocaleString()} views</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <Link key={article.id} to={`/article/${article.slug}`}>
+                <Card className="hover:shadow-md transition-shadow cursor-pointer group h-full">
+                  <CardContent className="p-5">
+                    <Badge variant="secondary" className="mb-3">{article.category}</Badge>
+                    <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-2">
+                      {article.title}
+                    </h4>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> {article.readTime}
+                      </span>
+                      <span>{article.views.toLocaleString()} views</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </section>
