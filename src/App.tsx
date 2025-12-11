@@ -18,6 +18,10 @@ import MyTasks from './pages/MyTasks';
 import Analytics from './pages/Analytics';
 import PublicHome from './pages/PublicHome';
 import Auth from './pages/Auth';
+import TechnologyPage from './pages/TechnologyPage';
+import CourseCategoryPage from './pages/CourseCategoryPage';
+import SearchResults from './pages/SearchResults';
+import LearningPathPage from './pages/LearningPathPage';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -34,6 +38,10 @@ const App = () => (
               {/* Public Routes */}
               <Route path="/" element={<PublicHome />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/search" element={<SearchResults />} />
+              <Route path="/technology/:slug" element={<TechnologyPage />} />
+              <Route path="/category/:category" element={<CourseCategoryPage />} />
+              <Route path="/path/:path" element={<LearningPathPage />} />
               
               {/* Protected Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute><ContentManagement /></ProtectedRoute>} />
