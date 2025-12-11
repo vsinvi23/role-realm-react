@@ -137,8 +137,8 @@ const LearningPathPage = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-primary/10">
-            <Icon className="h-8 w-8 text-primary" />
+          <div className="p-3 rounded-xl bg-primary">
+            <Icon className="h-8 w-8 text-primary-foreground" />
           </div>
           <div>
             <Badge variant="secondary" className="mb-1">Learning Path</Badge>
