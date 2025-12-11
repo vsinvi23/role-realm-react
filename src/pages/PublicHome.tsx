@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, BookOpen, Code, Zap, Users, GraduationCap, Shield, Server, Cloud, ChevronRight, Star, Clock, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
 
 const popularTags = [
   'System Design',
@@ -100,6 +102,7 @@ const technologies = ['DSA', 'Practice Problems', 'C', 'C++', 'Java', 'Python', 
 const PublicHome = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const { isAuthenticated, user, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -129,8 +132,23 @@ const PublicHome = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search..." className="pl-9" />
               </div>
-              <Button variant="outline" size="sm">Sign In</Button>
-              <Button size="sm">Get Started</Button>
+              {isAuthenticated ? (
+                <>
+                  <Link to="/dashboard">
+                    <Button variant="outline" size="sm">Dashboard</Button>
+                  </Link>
+                  <Button size="sm" variant="ghost" onClick={logout}>{user?.name}</Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/auth">
+                    <Button variant="outline" size="sm">Sign In</Button>
+                  </Link>
+                  <Link to="/auth">
+                    <Button size="sm">Get Started</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
