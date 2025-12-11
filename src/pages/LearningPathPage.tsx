@@ -4,14 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 
 const pathData: Record<string, {
   title: string;
   description: string;
   icon: React.ElementType;
-  color: string;
   totalCourses: number;
   totalHours: number;
   students: number;
@@ -23,7 +21,6 @@ const pathData: Record<string, {
     title: 'Software Development Engineer',
     description: 'Master the skills needed to become a professional software developer. From fundamentals to advanced concepts.',
     icon: Code,
-    color: 'from-blue-600 to-indigo-700',
     totalCourses: 24,
     totalHours: 120,
     students: 85000,
@@ -42,7 +39,6 @@ const pathData: Record<string, {
     title: 'System Architect',
     description: 'Learn to design and architect large-scale distributed systems used by millions of users.',
     icon: Server,
-    color: 'from-purple-600 to-pink-700',
     totalCourses: 18,
     totalHours: 90,
     students: 42000,
@@ -60,7 +56,6 @@ const pathData: Record<string, {
     title: 'Security Architect',
     description: 'Master application security, penetration testing, and secure software development practices.',
     icon: Shield,
-    color: 'from-red-600 to-orange-700',
     totalCourses: 15,
     totalHours: 75,
     students: 28000,
@@ -78,7 +73,6 @@ const pathData: Record<string, {
     title: 'DevOps Engineer',
     description: 'Bridge development and operations with CI/CD, containerization, and infrastructure as code.',
     icon: Cloud,
-    color: 'from-teal-600 to-cyan-700',
     totalCourses: 20,
     totalHours: 100,
     students: 55000,
@@ -97,7 +91,6 @@ const pathData: Record<string, {
     title: 'Data Engineer',
     description: 'Build data pipelines and infrastructure to power data-driven organizations.',
     icon: Zap,
-    color: 'from-orange-600 to-yellow-700',
     totalCourses: 16,
     totalHours: 80,
     students: 38000,
@@ -115,7 +108,6 @@ const pathData: Record<string, {
     title: 'Full Stack Developer',
     description: 'Build complete web applications from frontend to backend, databases to deployment.',
     icon: Code,
-    color: 'from-green-600 to-emerald-700',
     totalCourses: 22,
     totalHours: 110,
     students: 92000,
@@ -176,21 +168,21 @@ const LearningPathPage = () => {
       </header>
 
       {/* Hero */}
-      <section className={`bg-gradient-to-br ${data.color} text-white py-16`}>
+      <section className="bg-primary text-primary-foreground py-16">
         <div className="container mx-auto px-4">
-          <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors">
+          <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to Home
           </Link>
           <div className="flex items-center gap-4 mb-4">
-            <div className="p-4 rounded-xl bg-white/20">
+            <div className="p-4 rounded-xl bg-primary-foreground/20">
               <Icon className="h-10 w-10" />
             </div>
             <div>
-              <Badge className="bg-white/20 text-white border-0 mb-2">Learning Path</Badge>
+              <Badge className="bg-primary-foreground/20 text-primary-foreground border-0 mb-2">Learning Path</Badge>
               <h1 className="text-4xl md:text-5xl font-bold">{data.title}</h1>
             </div>
           </div>
-          <p className="text-lg text-white/90 max-w-2xl mb-8">{data.description}</p>
+          <p className="text-lg text-primary-foreground/90 max-w-2xl mb-8">{data.description}</p>
           <div className="flex flex-wrap items-center gap-6 mb-8">
             <div className="flex items-center gap-2">
               <BookOpen className="h-5 w-5" />
@@ -205,7 +197,7 @@ const LearningPathPage = () => {
               <span>{data.students.toLocaleString()} Students</span>
             </div>
           </div>
-          <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+          <Button size="lg" variant="secondary">
             Start Learning Path
           </Button>
         </div>
@@ -222,7 +214,7 @@ const LearningPathPage = () => {
                   <Card key={module.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br ${data.color} text-white flex items-center justify-center font-bold`}>
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
                           {index + 1}
                         </div>
                         <div className="flex-1">
@@ -265,7 +257,7 @@ const LearningPathPage = () => {
                 <ul className="space-y-3">
                   {data.outcomes.map((outcome, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
                       <span className="text-muted-foreground">{outcome}</span>
                     </li>
                   ))}
@@ -273,11 +265,11 @@ const LearningPathPage = () => {
               </CardContent>
             </Card>
 
-            <Card className={`bg-gradient-to-br ${data.color} text-white`}>
+            <Card className="bg-primary text-primary-foreground">
               <CardContent className="p-6 text-center">
                 <h3 className="font-semibold mb-2">Ready to start?</h3>
-                <p className="text-white/80 mb-4 text-sm">Join {data.students.toLocaleString()}+ students</p>
-                <Button className="w-full bg-white text-primary hover:bg-white/90">
+                <p className="text-primary-foreground/80 mb-4 text-sm">Join {data.students.toLocaleString()}+ students</p>
+                <Button className="w-full" variant="secondary">
                   Enroll Now
                 </Button>
               </CardContent>

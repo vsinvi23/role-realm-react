@@ -10,12 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 
 const allCourses = [
-  { id: 1, title: 'System Design Interview Masterclass', description: 'Master distributed systems and scalability patterns.', category: 'Interview Prep', level: 'Intermediate', duration: '24 hours', rating: 4.8, students: 12500, gradient: 'from-blue-600 to-indigo-700' },
-  { id: 2, title: 'Complete DSA Bootcamp', description: 'Data structures and algorithms from scratch.', category: 'DSA', level: 'Beginner', duration: '60 hours', rating: 4.9, students: 45000, gradient: 'from-purple-600 to-pink-700' },
-  { id: 3, title: 'React & TypeScript Deep Dive', description: 'Build production-ready applications.', category: 'Web Development', level: 'Intermediate', duration: '18 hours', rating: 4.6, students: 6700, gradient: 'from-cyan-600 to-blue-700' },
-  { id: 4, title: 'Machine Learning A-Z', description: 'Build intelligent systems that learn from data.', category: 'Machine Learning', level: 'Beginner', duration: '55 hours', rating: 4.9, students: 52000, gradient: 'from-indigo-600 to-purple-700' },
-  { id: 5, title: 'DevOps Complete Bootcamp', description: 'CI/CD, Docker, Kubernetes, and infrastructure.', category: 'DevOps', level: 'Beginner', duration: '50 hours', rating: 4.8, students: 35000, gradient: 'from-teal-600 to-cyan-700' },
-  { id: 6, title: 'Python for Data Science', description: 'Data analysis and visualization with Python.', category: 'Python', level: 'Intermediate', duration: '35 hours', rating: 4.8, students: 45000, gradient: 'from-yellow-500 to-green-600' },
+  { id: 1, title: 'System Design Interview Masterclass', description: 'Master distributed systems and scalability patterns.', category: 'Interview Prep', level: 'Intermediate', duration: '24 hours', rating: 4.8, students: 12500 },
+  { id: 2, title: 'Complete DSA Bootcamp', description: 'Data structures and algorithms from scratch.', category: 'DSA', level: 'Beginner', duration: '60 hours', rating: 4.9, students: 45000 },
+  { id: 3, title: 'React & TypeScript Deep Dive', description: 'Build production-ready applications.', category: 'Web Development', level: 'Intermediate', duration: '18 hours', rating: 4.6, students: 6700 },
+  { id: 4, title: 'Machine Learning A-Z', description: 'Build intelligent systems that learn from data.', category: 'Machine Learning', level: 'Beginner', duration: '55 hours', rating: 4.9, students: 52000 },
+  { id: 5, title: 'DevOps Complete Bootcamp', description: 'CI/CD, Docker, Kubernetes, and infrastructure.', category: 'DevOps', level: 'Beginner', duration: '50 hours', rating: 4.8, students: 35000 },
+  { id: 6, title: 'Python for Data Science', description: 'Data analysis and visualization with Python.', category: 'Python', level: 'Intermediate', duration: '35 hours', rating: 4.8, students: 45000 },
 ];
 
 const allArticles = [
@@ -150,14 +150,14 @@ const SearchResults = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredCourses.slice(0, 3).map((course) => (
                     <Card key={course.id} className="hover:shadow-lg transition-shadow cursor-pointer group overflow-hidden">
-                      <div className={`h-24 bg-gradient-to-br ${course.gradient} flex items-center justify-center`}>
-                        <Play className="h-8 w-8 text-white" />
+                      <div className="h-24 bg-primary flex items-center justify-center">
+                        <Play className="h-8 w-8 text-primary-foreground" />
                       </div>
                       <CardContent className="p-4">
                         <Badge variant="secondary" className="mb-2">{course.category}</Badge>
                         <h3 className="font-semibold group-hover:text-primary transition-colors mb-2">{course.title}</h3>
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="flex items-center gap-1 text-yellow-500">
+                          <span className="flex items-center gap-1 text-warning">
                             <Star className="h-3 w-3 fill-current" /> {course.rating}
                           </span>
                           <span className="text-muted-foreground">{course.students.toLocaleString()} students</span>
@@ -194,8 +194,8 @@ const SearchResults = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCourses.map((course) => (
                 <Card key={course.id} className="hover:shadow-lg transition-shadow cursor-pointer group overflow-hidden">
-                  <div className={`h-24 bg-gradient-to-br ${course.gradient} flex items-center justify-center`}>
-                    <Play className="h-8 w-8 text-white" />
+                  <div className="h-24 bg-primary flex items-center justify-center">
+                    <Play className="h-8 w-8 text-primary-foreground" />
                   </div>
                   <CardContent className="p-4">
                     <Badge variant="secondary" className="mb-2">{course.category}</Badge>
@@ -206,7 +206,7 @@ const SearchResults = () => {
                       <span className="flex items-center gap-1 text-muted-foreground"><Clock className="h-3 w-3" /> {course.duration}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="flex items-center gap-1 text-yellow-500"><Star className="h-3 w-3 fill-current" /> {course.rating}</span>
+                      <span className="flex items-center gap-1 text-warning"><Star className="h-3 w-3 fill-current" /> {course.rating}</span>
                       <span className="text-muted-foreground"><Users className="h-3 w-3 inline" /> {course.students.toLocaleString()}</span>
                     </div>
                   </CardContent>

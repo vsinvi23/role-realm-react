@@ -10,14 +10,12 @@ const categoryData: Record<string, {
   title: string;
   description: string;
   icon: React.ElementType;
-  color: string;
   courses: { id: number; title: string; description: string; level: string; duration: string; rating: number; students: number; tags: string[] }[];
 }> = {
   bytes: {
     title: 'Course Bytes',
     description: 'Quick, focused learning modules perfect for busy schedules. Master concepts in bite-sized lessons.',
     icon: Zap,
-    color: 'from-yellow-500 to-orange-600',
     courses: [
       { id: 1, title: 'Git in 30 Minutes', description: 'Essential Git commands and workflows for everyday development.', level: 'Beginner', duration: '30 min', rating: 4.8, students: 25000, tags: ['Git', 'Version Control'] },
       { id: 2, title: 'Docker Quick Start', description: 'Containerize your first application in under an hour.', level: 'Beginner', duration: '45 min', rating: 4.7, students: 18000, tags: ['Docker', 'DevOps'] },
@@ -31,7 +29,6 @@ const categoryData: Record<string, {
     title: 'Interview Prep',
     description: 'Comprehensive preparation for technical interviews at top tech companies. Practice problems, mock interviews, and strategies.',
     icon: Target,
-    color: 'from-blue-600 to-indigo-700',
     courses: [
       { id: 1, title: 'FAANG Interview Masterclass', description: 'Complete preparation for interviews at Facebook, Amazon, Apple, Netflix, and Google.', level: 'Intermediate', duration: '60 hours', rating: 4.9, students: 45000, tags: ['FAANG', 'System Design', 'DSA'] },
       { id: 2, title: 'System Design Interview', description: 'Design scalable systems and ace your senior engineer interviews.', level: 'Advanced', duration: '40 hours', rating: 4.8, students: 28000, tags: ['System Design', 'Architecture'] },
@@ -45,7 +42,6 @@ const categoryData: Record<string, {
     title: 'Targeted Learning',
     description: 'Skill-specific deep dives to master particular technologies or concepts. Perfect for upskilling.',
     icon: GraduationCap,
-    color: 'from-purple-600 to-pink-700',
     courses: [
       { id: 1, title: 'GraphQL Complete Guide', description: 'Build and consume GraphQL APIs with Apollo.', level: 'Intermediate', duration: '20 hours', rating: 4.7, students: 15000, tags: ['GraphQL', 'Apollo', 'API'] },
       { id: 2, title: 'Kubernetes Deep Dive', description: 'Container orchestration for production environments.', level: 'Advanced', duration: '35 hours', rating: 4.8, students: 18000, tags: ['Kubernetes', 'DevOps'] },
@@ -59,7 +55,6 @@ const categoryData: Record<string, {
     title: 'Learning Paths',
     description: 'Comprehensive, role-based tracks that take you from beginner to job-ready. Structured curriculum with projects.',
     icon: Route,
-    color: 'from-green-600 to-teal-700',
     courses: [
       { id: 1, title: 'Full Stack Developer Path', description: 'Complete journey from HTML to deploying full-stack applications.', level: 'Beginner to Advanced', duration: '120 hours', rating: 4.9, students: 85000, tags: ['Full Stack', 'React', 'Node.js'] },
       { id: 2, title: 'Data Science Path', description: 'Python, statistics, ML, and data visualization for data scientists.', level: 'Beginner to Advanced', duration: '100 hours', rating: 4.8, students: 52000, tags: ['Data Science', 'Python', 'ML'] },
@@ -119,19 +114,19 @@ const CourseCategoryPage = () => {
       </header>
 
       {/* Hero */}
-      <section className={`bg-gradient-to-br ${data.color} text-white py-16`}>
+      <section className="bg-primary text-primary-foreground py-16">
         <div className="container mx-auto px-4">
-          <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors">
+          <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to Home
           </Link>
           <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 rounded-xl bg-white/20">
+            <div className="p-3 rounded-xl bg-primary-foreground/20">
               <Icon className="h-8 w-8" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold">{data.title}</h1>
           </div>
-          <p className="text-lg text-white/90 max-w-2xl mb-6">{data.description}</p>
-          <Badge className="bg-white/20 text-white border-0">{data.courses.length} Courses Available</Badge>
+          <p className="text-lg text-primary-foreground/90 max-w-2xl mb-6">{data.description}</p>
+          <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">{data.courses.length} Courses Available</Badge>
         </div>
       </section>
 
@@ -141,8 +136,8 @@ const CourseCategoryPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.courses.map((course) => (
               <Card key={course.id} className="hover:shadow-lg transition-shadow cursor-pointer group overflow-hidden">
-                <div className={`h-32 bg-gradient-to-br ${data.color} p-4 flex items-end`}>
-                  <Badge variant="secondary" className="bg-white/20 text-white border-0">
+                <div className="h-32 bg-primary p-4 flex items-end">
+                  <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-0">
                     <Play className="h-3 w-3 mr-1" /> Course
                   </Badge>
                 </div>
@@ -156,7 +151,7 @@ const CourseCategoryPage = () => {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="flex items-center gap-1 text-yellow-500">
+                    <span className="flex items-center gap-1 text-warning">
                       <Star className="h-3 w-3 fill-current" /> {course.rating}
                     </span>
                     <span className="text-muted-foreground">•</span>
