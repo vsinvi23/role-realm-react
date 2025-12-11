@@ -10,7 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 const technologyData: Record<string, { 
   title: string; 
   description: string; 
-  color: string;
   courses: { id: number; title: string; level: string; duration: string; rating: number; students: number }[];
   articles: { id: number; title: string; readTime: string; views: number }[];
   tutorials: { id: number; title: string; steps: number; difficulty: string }[];
@@ -18,7 +17,6 @@ const technologyData: Record<string, {
   dsa: {
     title: 'Data Structures & Algorithms',
     description: 'Master fundamental data structures and algorithms for coding interviews and competitive programming.',
-    color: 'from-blue-600 to-indigo-700',
     courses: [
       { id: 1, title: 'Complete DSA Bootcamp', level: 'Beginner', duration: '60 hours', rating: 4.9, students: 45000 },
       { id: 2, title: 'Advanced Algorithms Masterclass', level: 'Advanced', duration: '40 hours', rating: 4.8, students: 12000 },
@@ -40,7 +38,6 @@ const technologyData: Record<string, {
   'practice-problems': {
     title: 'Practice Problems',
     description: 'Sharpen your coding skills with thousands of practice problems across all difficulty levels.',
-    color: 'from-green-600 to-emerald-700',
     courses: [
       { id: 1, title: '500+ Coding Problems Bundle', level: 'All Levels', duration: '100 hours', rating: 4.9, students: 65000 },
       { id: 2, title: 'LeetCode Patterns Mastery', level: 'Intermediate', duration: '45 hours', rating: 4.8, students: 28000 },
@@ -59,7 +56,6 @@ const technologyData: Record<string, {
   c: {
     title: 'C Programming',
     description: 'Learn the foundational programming language that powers operating systems and embedded systems.',
-    color: 'from-gray-600 to-slate-700',
     courses: [
       { id: 1, title: 'C Programming Fundamentals', level: 'Beginner', duration: '25 hours', rating: 4.7, students: 32000 },
       { id: 2, title: 'Advanced C: Pointers & Memory', level: 'Intermediate', duration: '18 hours', rating: 4.6, students: 12000 },
@@ -78,7 +74,6 @@ const technologyData: Record<string, {
   'cpp': {
     title: 'C++ Programming',
     description: 'Master modern C++ for high-performance applications, game development, and systems programming.',
-    color: 'from-blue-700 to-blue-900',
     courses: [
       { id: 1, title: 'Modern C++ Complete Guide', level: 'Beginner', duration: '45 hours', rating: 4.8, students: 42000 },
       { id: 2, title: 'C++ STL Deep Dive', level: 'Intermediate', duration: '20 hours', rating: 4.7, students: 18000 },
@@ -98,7 +93,6 @@ const technologyData: Record<string, {
   java: {
     title: 'Java Programming',
     description: 'Enterprise-grade programming with Java for web applications, Android, and backend systems.',
-    color: 'from-orange-600 to-red-700',
     courses: [
       { id: 1, title: 'Java Fundamentals to Advanced', level: 'All Levels', duration: '50 hours', rating: 4.8, students: 55000 },
       { id: 2, title: 'Spring Boot Masterclass', level: 'Intermediate', duration: '35 hours', rating: 4.9, students: 28000 },
@@ -118,7 +112,6 @@ const technologyData: Record<string, {
   python: {
     title: 'Python Programming',
     description: 'Versatile programming language for web development, data science, AI, and automation.',
-    color: 'from-yellow-500 to-green-600',
     courses: [
       { id: 1, title: 'Python Complete Bootcamp', level: 'Beginner', duration: '40 hours', rating: 4.9, students: 85000 },
       { id: 2, title: 'Python for Data Science', level: 'Intermediate', duration: '35 hours', rating: 4.8, students: 45000 },
@@ -138,7 +131,6 @@ const technologyData: Record<string, {
   javascript: {
     title: 'JavaScript',
     description: 'The language of the web - build interactive websites, web apps, and server-side applications.',
-    color: 'from-yellow-400 to-yellow-600',
     courses: [
       { id: 1, title: 'JavaScript Complete Guide', level: 'Beginner', duration: '45 hours', rating: 4.8, students: 72000 },
       { id: 2, title: 'Advanced JavaScript Patterns', level: 'Advanced', duration: '25 hours', rating: 4.7, students: 18000 },
@@ -158,7 +150,6 @@ const technologyData: Record<string, {
   'data-science': {
     title: 'Data Science',
     description: 'Extract insights from data using statistics, machine learning, and visualization techniques.',
-    color: 'from-purple-600 to-pink-700',
     courses: [
       { id: 1, title: 'Data Science Bootcamp', level: 'Beginner', duration: '60 hours', rating: 4.8, students: 38000 },
       { id: 2, title: 'Statistical Analysis with Python', level: 'Intermediate', duration: '25 hours', rating: 4.7, students: 15000 },
@@ -177,7 +168,6 @@ const technologyData: Record<string, {
   'machine-learning': {
     title: 'Machine Learning',
     description: 'Build intelligent systems that learn from data and make predictions.',
-    color: 'from-indigo-600 to-purple-700',
     courses: [
       { id: 1, title: 'Machine Learning A-Z', level: 'Beginner', duration: '55 hours', rating: 4.9, students: 52000 },
       { id: 2, title: 'Deep Learning Specialization', level: 'Advanced', duration: '45 hours', rating: 4.8, students: 28000 },
@@ -197,7 +187,6 @@ const technologyData: Record<string, {
   linux: {
     title: 'Linux',
     description: 'Master the command line and system administration for servers and development environments.',
-    color: 'from-orange-500 to-yellow-600',
     courses: [
       { id: 1, title: 'Linux Fundamentals', level: 'Beginner', duration: '20 hours', rating: 4.7, students: 28000 },
       { id: 2, title: 'Linux System Administration', level: 'Intermediate', duration: '35 hours', rating: 4.8, students: 15000 },
@@ -216,7 +205,6 @@ const technologyData: Record<string, {
   devops: {
     title: 'DevOps',
     description: 'Bridge development and operations with CI/CD, containerization, and infrastructure as code.',
-    color: 'from-teal-600 to-cyan-700',
     courses: [
       { id: 1, title: 'DevOps Complete Bootcamp', level: 'Beginner', duration: '50 hours', rating: 4.8, students: 35000 },
       { id: 2, title: 'Kubernetes Mastery', level: 'Intermediate', duration: '30 hours', rating: 4.9, students: 22000 },
@@ -236,7 +224,6 @@ const technologyData: Record<string, {
   sql: {
     title: 'SQL & Databases',
     description: 'Query, manage, and optimize relational databases for applications of any scale.',
-    color: 'from-cyan-600 to-blue-700',
     courses: [
       { id: 1, title: 'SQL Complete Course', level: 'Beginner', duration: '25 hours', rating: 4.8, students: 48000 },
       { id: 2, title: 'Advanced SQL & Query Optimization', level: 'Advanced', duration: '18 hours', rating: 4.7, students: 12000 },
@@ -255,7 +242,6 @@ const technologyData: Record<string, {
   'web-development': {
     title: 'Web Development',
     description: 'Build modern, responsive websites and web applications from frontend to backend.',
-    color: 'from-pink-600 to-rose-700',
     courses: [
       { id: 1, title: 'Full Stack Web Development', level: 'Beginner', duration: '80 hours', rating: 4.9, students: 92000 },
       { id: 2, title: 'React Complete Guide', level: 'Intermediate', duration: '40 hours', rating: 4.8, students: 55000 },
@@ -326,17 +312,17 @@ const TechnologyPage = () => {
       </header>
 
       {/* Hero */}
-      <section className={`bg-gradient-to-br ${tech.color} text-white py-16`}>
+      <section className="bg-primary text-primary-foreground py-16">
         <div className="container mx-auto px-4">
-          <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors">
+          <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to Home
           </Link>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">{tech.title}</h1>
-          <p className="text-lg text-white/90 max-w-2xl mb-6">{tech.description}</p>
+          <p className="text-lg text-primary-foreground/90 max-w-2xl mb-6">{tech.description}</p>
           <div className="flex items-center gap-4">
-            <Badge className="bg-white/20 text-white border-0">{tech.courses.length} Courses</Badge>
-            <Badge className="bg-white/20 text-white border-0">{tech.articles.length} Articles</Badge>
-            <Badge className="bg-white/20 text-white border-0">{tech.tutorials.length} Tutorials</Badge>
+            <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">{tech.courses.length} Courses</Badge>
+            <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">{tech.articles.length} Articles</Badge>
+            <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">{tech.tutorials.length} Tutorials</Badge>
           </div>
         </div>
       </section>
@@ -355,8 +341,8 @@ const TechnologyPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {tech.courses.map((course) => (
                   <Card key={course.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
-                    <div className={`h-24 bg-gradient-to-br ${tech.color} rounded-t-lg flex items-center justify-center`}>
-                      <Play className="h-8 w-8 text-white" />
+                    <div className="h-24 bg-primary rounded-t-lg flex items-center justify-center">
+                      <Play className="h-8 w-8 text-primary-foreground" />
                     </div>
                     <CardContent className="p-4">
                       <h3 className="font-semibold group-hover:text-primary transition-colors mb-2">{course.title}</h3>
@@ -365,7 +351,7 @@ const TechnologyPage = () => {
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {course.duration}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <span className="flex items-center gap-1 text-yellow-500">
+                        <span className="flex items-center gap-1 text-warning">
                           <Star className="h-3 w-3 fill-current" /> {course.rating}
                         </span>
                         <span className="text-muted-foreground">{course.students.toLocaleString()} students</span>

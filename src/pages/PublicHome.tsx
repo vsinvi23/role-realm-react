@@ -18,12 +18,12 @@ const popularTags = [
 ];
 
 const learningPaths = [
-  { id: 1, title: 'Software Development Engineer', icon: Code, color: 'bg-blue-500', courses: 24, hours: 120 },
-  { id: 2, title: 'System Architect', icon: Server, color: 'bg-purple-500', courses: 18, hours: 90 },
-  { id: 3, title: 'Security Architect', icon: Shield, color: 'bg-red-500', courses: 15, hours: 75 },
-  { id: 4, title: 'DevOps Engineer', icon: Cloud, color: 'bg-green-500', courses: 20, hours: 100 },
-  { id: 5, title: 'Data Engineer', icon: Zap, color: 'bg-orange-500', courses: 16, hours: 80 },
-  { id: 6, title: 'Full Stack Developer', icon: BookOpen, color: 'bg-teal-500', courses: 22, hours: 110 },
+  { id: 1, title: 'Software Development Engineer', icon: Code, color: 'bg-primary', courses: 24, hours: 120 },
+  { id: 2, title: 'System Architect', icon: Server, color: 'bg-primary/80', courses: 18, hours: 90 },
+  { id: 3, title: 'Security Architect', icon: Shield, color: 'bg-destructive', courses: 15, hours: 75 },
+  { id: 4, title: 'DevOps Engineer', icon: Cloud, color: 'bg-success', courses: 20, hours: 100 },
+  { id: 5, title: 'Data Engineer', icon: Zap, color: 'bg-warning', courses: 16, hours: 80 },
+  { id: 6, title: 'Full Stack Developer', icon: BookOpen, color: 'bg-info', courses: 22, hours: 110 },
 ];
 
 const courseCategories = [
@@ -45,7 +45,6 @@ const featuredCourses = [
     duration: '24 hours',
     instructor: 'Tech Lead at FAANG',
     tags: ['System Design', 'Scalability', 'Distributed Systems'],
-    gradient: 'from-blue-600 to-indigo-700',
   },
   {
     id: 2,
@@ -58,7 +57,6 @@ const featuredCourses = [
     duration: '40 hours',
     instructor: 'DevOps Architect',
     tags: ['DevOps', 'Kubernetes', 'CI/CD', 'AI'],
-    gradient: 'from-green-600 to-emerald-700',
   },
   {
     id: 3,
@@ -71,7 +69,6 @@ const featuredCourses = [
     duration: '60 hours',
     instructor: 'Ex-Google Engineer',
     tags: ['DSA', 'Algorithms', 'Problem Solving'],
-    gradient: 'from-purple-600 to-pink-700',
   },
   {
     id: 4,
@@ -84,7 +81,6 @@ const featuredCourses = [
     duration: '18 hours',
     instructor: 'Senior Frontend Engineer',
     tags: ['React', 'TypeScript', 'Frontend'],
-    gradient: 'from-cyan-600 to-blue-700',
   },
 ];
 
@@ -314,8 +310,8 @@ const PublicHome = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredCourses.map((course) => (
               <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer">
-                <div className={`h-32 bg-gradient-to-br ${course.gradient} p-4 flex items-end`}>
-                  <Badge variant="secondary" className="bg-white/20 text-white border-0">
+                <div className="h-32 bg-primary p-4 flex items-end">
+                  <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-0">
                     <Play className="h-3 w-3 mr-1" /> Course
                   </Badge>
                 </div>
@@ -327,7 +323,7 @@ const PublicHome = () => {
                     {course.description}
                   </p>
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="flex items-center gap-1 text-yellow-500">
+                    <span className="flex items-center gap-1 text-warning">
                       <Star className="h-3 w-3 fill-current" /> {course.rating}
                     </span>
                     <span className="text-muted-foreground">•</span>
