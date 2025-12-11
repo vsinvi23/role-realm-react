@@ -411,27 +411,7 @@ const CourseOverview = ({
               {course.level}
             </Badge>
             <h1 className="text-xl md:text-2xl font-bold mb-4">{course.title}</h1>
-            <p className="text-muted-foreground mb-6">{course.description}</p>
-            
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 fill-warning text-warning" />
-                <span className="font-semibold">{course.rating}</span>
-                <span className="text-muted-foreground">({course.reviews.toLocaleString()} reviews)</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                <span>{course.students.toLocaleString()} students</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Globe className="h-4 w-4" />
-                <span>{course.language}</span>
-              </div>
-            </div>
-
-            <div className="mt-4 text-sm text-muted-foreground">
-              Created by <span className="text-foreground font-medium">{course.instructor}</span> • Last updated {course.lastUpdated}
-            </div>
+            <p className="text-muted-foreground">{course.description}</p>
           </div>
 
           {/* Enrollment Buttons */}
