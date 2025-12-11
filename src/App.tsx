@@ -13,6 +13,7 @@ import ContentManagement from './pages/ContentManagement';
 import CourseManagement from './pages/CourseManagement';
 import ArticleManagement from './pages/ArticleManagement';
 import MyTasks from './pages/MyTasks';
+import Analytics from './pages/Analytics';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/courses" element={<CourseManagement />} />
             <Route path="/articles" element={<ArticleManagement />} />
             <Route path="/my-tasks" element={<MyTasks />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
