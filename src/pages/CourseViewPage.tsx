@@ -408,7 +408,7 @@ const CourseOverview = ({
             <Badge className="mb-3 bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30">
               {course.level}
             </Badge>
-            <h1 className="text-2xl md:text-3xl font-bold mb-4">{course.title}</h1>
+            <h1 className="text-xl md:text-2xl font-bold mb-4">{course.title}</h1>
             <p className="text-primary-foreground/90 mb-6">{course.description}</p>
             
             <div className="flex flex-wrap items-center gap-4 text-sm">
@@ -444,13 +444,6 @@ const CourseOverview = ({
               </span>
             </div>
             
-            <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-3xl font-bold">{course.price}</span>
-              {course.originalPrice && (
-                <span className="text-muted-foreground line-through">{course.originalPrice}</span>
-              )}
-            </div>
-
             <Button onClick={onEnroll} size="lg" className="w-full mb-3">
               <GraduationCap className="h-4 w-4 mr-2" />
               Enroll Now
