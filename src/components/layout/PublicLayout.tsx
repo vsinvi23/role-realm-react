@@ -24,11 +24,11 @@ interface PublicLayoutProps {
 
 const navItems = [
   { icon: Home, label: 'Home', href: '/' },
-  { icon: BookOpen, label: 'Courses', href: '/category/paths' },
-  { icon: GraduationCap, label: 'Learning Paths', href: '/category/targeted' },
-  { icon: FileText, label: 'Articles', href: '/search?q=article' },
-  { icon: Code, label: 'Practice', href: '/technology/dsa' },
-  { icon: Briefcase, label: 'Interview Prep', href: '/category/interview' },
+  { icon: BookOpen, label: 'Courses', href: '/explore/courses' },
+  { icon: GraduationCap, label: 'Learning Paths', href: '/explore/paths' },
+  { icon: FileText, label: 'Articles', href: '/explore/articles' },
+  { icon: Code, label: 'Practice', href: '/explore/practice' },
+  { icon: Briefcase, label: 'Interview Prep', href: '/explore/interview' },
 ];
 
 export function PublicLayout({ children }: PublicLayoutProps) {
@@ -47,10 +47,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-                <span className="text-sidebar-primary-foreground font-bold text-lg">T</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+                <span className="text-sidebar-primary-foreground font-bold text-lg">G</span>
               </div>
-              <span className="text-lg font-bold text-sidebar-foreground">TechLearn</span>
+              <span className="text-lg font-bold text-sidebar-foreground">GeekGully</span>
             </Link>
             <Button 
               variant="ghost" 

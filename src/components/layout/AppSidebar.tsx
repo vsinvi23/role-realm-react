@@ -191,12 +191,12 @@ export function AppSidebar() {
       {/* Logo */}
       <div className="flex items-center h-16 px-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-            <span className="text-sidebar-primary-foreground font-bold text-sm">FX</span>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+            <span className="text-sidebar-primary-foreground font-bold text-sm">GG</span>
           </div>
           {!collapsed && (
             <span className="font-semibold text-sidebar-foreground animate-fade-in">
-              Fuel iX
+              GeekGully
             </span>
           )}
         </div>
