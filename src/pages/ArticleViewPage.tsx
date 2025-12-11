@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Clock, Calendar, Eye, ThumbsUp, Bookmark, Share2, ChevronLeft, MessageSquare } from 'lucide-react';
+import { Clock, Calendar, Eye, ThumbsUp, Bookmark, Share2, ChevronLeft, MessageSquare, Reply, CornerDownRight } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 const articleData: Record<string, {
   title: string;
@@ -107,6 +108,93 @@ const relatedArticles = [
   { title: 'Event-Driven Architecture', readTime: '10 min', category: 'Architecture' },
   { title: 'Docker for Beginners', readTime: '15 min', category: 'DevOps' },
 ];
+
+interface Comment {
+  id: string;
+  author: { name: string; avatar: string };
+  content: string;
+  timestamp: string;
+  likes: number;
+  replies?: Comment[];
+}
+
+const commentsData: Comment[] = [
+  {
+    id: '1',
+    author: { name: 'Alex Kumar', avatar: '' },
+    content: 'Great article! The explanation of service discovery was particularly helpful. I have been struggling to understand how services find each other in a microservices architecture.',
+    timestamp: '2 hours ago',
+    likes: 24,
+    replies: [
+      {
+        id: '1-1',
+        author: { name: 'Sarah Chen', avatar: '' },
+        content: 'Thanks Alex! Service discovery is indeed a crucial concept. I recommend also looking into Consul and Kubernetes DNS for more practical examples.',
+        timestamp: '1 hour ago',
+        likes: 8,
+      },
+      {
+        id: '1-2',
+        author: { name: 'Mike Johnson', avatar: '' },
+        content: 'I found that using Kubernetes made service discovery much easier. The built-in DNS is really powerful.',
+        timestamp: '45 min ago',
+        likes: 5,
+      }
+    ]
+  },
+  {
+    id: '2',
+    author: { name: 'Priya Sharma', avatar: '' },
+    content: 'Would love to see a follow-up article on handling distributed transactions across microservices. The saga pattern would be a great topic!',
+    timestamp: '4 hours ago',
+    likes: 31,
+    replies: [
+      {
+        id: '2-1',
+        author: { name: 'David Lee', avatar: '' },
+        content: 'Agreed! Saga pattern and event sourcing would be excellent topics. Also maybe something on CQRS.',
+        timestamp: '3 hours ago',
+        likes: 12,
+      }
+    ]
+  },
+  {
+    id: '3',
+    author: { name: 'James Wilson', avatar: '' },
+    content: 'The section on resilience patterns is spot on. We implemented circuit breakers in our payment service and it saved us during a major outage.',
+    timestamp: '6 hours ago',
+    likes: 18,
+    replies: []
+  }
+];
+
+const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => (
+  <div className={`flex gap-3 ${isReply ? 'ml-8 mt-3' : ''}`}>
+    <Avatar className={`${isReply ? 'h-8 w-8' : 'h-10 w-10'} border border-border`}>
+      <AvatarImage src={comment.author.avatar} />
+      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+        {comment.author.name.split(' ').map(n => n[0]).join('')}
+      </AvatarFallback>
+    </Avatar>
+    <div className="flex-1">
+      <div className="flex items-center gap-2 mb-1">
+        <span className={`font-semibold text-foreground ${isReply ? 'text-sm' : ''}`}>{comment.author.name}</span>
+        <span className="text-xs text-muted-foreground">{comment.timestamp}</span>
+      </div>
+      <p className={`text-muted-foreground ${isReply ? 'text-sm' : ''} leading-relaxed`}>{comment.content}</p>
+      <div className="flex items-center gap-4 mt-2">
+        <Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground hover:text-primary">
+          <ThumbsUp className="h-3.5 w-3.5 mr-1" />
+          <span className="text-xs">{comment.likes}</span>
+        </Button>
+        <Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground hover:text-primary">
+          <Reply className="h-3.5 w-3.5 mr-1" />
+          <span className="text-xs">Reply</span>
+        </Button>
+      </div>
+    </div>
+  </div>
+);
 
 const ArticleViewPage = () => {
   const { slug } = useParams();
@@ -270,15 +358,52 @@ const ArticleViewPage = () => {
             </aside>
           </div>
 
-          <Separator className="my-8" />
+          <Separator className="my-6" />
 
           {/* Tags Footer */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mb-8">
             {article.tags.map((tag) => (
               <Badge key={tag} variant="secondary" className="bg-muted hover:bg-primary/10 cursor-pointer">
                 #{tag}
               </Badge>
             ))}
+          </div>
+
+          {/* Comments Section */}
+          <div className="max-w-4xl">
+            <div className="flex items-center gap-2 mb-6">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              <h3 className="text-xl font-bold text-foreground">Comments ({commentsData.length})</h3>
+            </div>
+
+            {/* Add Comment */}
+            <Card className="border-border mb-6">
+              <CardContent className="p-4">
+                <Textarea 
+                  placeholder="Share your thoughts on this article..." 
+                  className="mb-3 min-h-[80px] resize-none"
+                />
+                <div className="flex justify-end">
+                  <Button size="sm">Post Comment</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Comments List */}
+            <div className="space-y-6">
+              {commentsData.map((comment) => (
+                <div key={comment.id} className="border-b border-border pb-6 last:border-0">
+                  <CommentItem comment={comment} />
+                  {comment.replies && comment.replies.length > 0 && (
+                    <div className="mt-3 space-y-3 border-l-2 border-primary/20 pl-4 ml-5">
+                      {comment.replies.map((reply) => (
+                        <CommentItem key={reply.id} comment={reply} isReply />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
