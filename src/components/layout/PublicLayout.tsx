@@ -35,22 +35,31 @@ export function PublicLayout({ children }: PublicLayoutProps) {
   const location = useLocation();
   const { isAuthenticated, user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
       {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-52 bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-transform duration-300 lg:static lg:translate-x-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      <aside 
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 lg:static",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          sidebarExpanded ? "w-52" : "w-16"
+        )}
+        onMouseEnter={() => setSidebarExpanded(true)}
+        onMouseLeave={() => setSidebarExpanded(false)}
+      >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+          <div className="flex items-center justify-between h-16 px-3 border-b border-sidebar-border">
+            <Link to="/" className="flex items-center gap-2 overflow-hidden">
+              <div className="w-8 h-8 min-w-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
                 <span className="text-sidebar-primary-foreground font-bold text-lg">G</span>
               </div>
-              <span className="text-lg font-bold text-sidebar-foreground">GeekGully</span>
+              <span className={cn(
+                "text-lg font-bold text-sidebar-foreground whitespace-nowrap transition-opacity duration-300",
+                sidebarExpanded ? "opacity-100" : "opacity-0 lg:opacity-0"
+              )}>GeekGully</span>
             </Link>
             <Button 
               variant="ghost" 
@@ -63,7 +72,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          <nav className="flex-1 overflow-y-auto p-2 space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -77,40 +86,80 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                       ? "bg-sidebar-primary text-sidebar-primary-foreground" 
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
+                  title={!sidebarExpanded ? item.label : undefined}
                 >
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
+                  <item.icon className="h-5 w-5 min-w-5" />
+                  <span className={cn(
+                    "whitespace-nowrap transition-opacity duration-300",
+                    sidebarExpanded ? "opacity-100" : "opacity-0"
+                  )}>{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
           {/* Auth Section */}
-          <div className="p-4 border-t border-sidebar-border">
+          <div className="p-2 border-t border-sidebar-border">
             {isAuthenticated ? (
               <div className="space-y-2">
                 <Link to="/dashboard">
-                  <Button variant="secondary" className="w-full justify-start">
-                    <GraduationCap className="h-4 w-4 mr-2" />
-                    My Dashboard
+                  <Button variant="secondary" className={cn(
+                    "w-full justify-start",
+                    !sidebarExpanded && "px-3"
+                  )}>
+                    <GraduationCap className="h-4 w-4 min-w-4" />
+                    <span className={cn(
+                      "ml-2 whitespace-nowrap transition-opacity duration-300",
+                      sidebarExpanded ? "opacity-100" : "opacity-0 hidden"
+                    )}>My Dashboard</span>
                   </Button>
                 </Link>
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start text-sidebar-muted"
+                  className={cn(
+                    "w-full justify-start text-sidebar-muted",
+                    !sidebarExpanded && "px-3"
+                  )}
                   onClick={logout}
+                  title={!sidebarExpanded ? `Sign Out (${user?.name})` : undefined}
                 >
-                  Sign Out ({user?.name})
+                  <X className="h-4 w-4 min-w-4" />
+                  <span className={cn(
+                    "ml-2 whitespace-nowrap transition-opacity duration-300",
+                    sidebarExpanded ? "opacity-100" : "opacity-0 hidden"
+                  )}>Sign Out</span>
                 </Button>
               </div>
             ) : (
               <div className="space-y-2">
                 <Link to="/auth">
-                  <Button className="w-full">Get Started</Button>
+                  <Button className={cn(
+                    "w-full",
+                    !sidebarExpanded && "px-3"
+                  )}>
+                    <span className={cn(
+                      "whitespace-nowrap",
+                      sidebarExpanded ? "block" : "hidden"
+                    )}>Get Started</span>
+                    <ChevronRight className={cn(
+                      "h-4 w-4",
+                      sidebarExpanded ? "hidden" : "block"
+                    )} />
+                  </Button>
                 </Link>
                 <Link to="/auth">
-                  <Button variant="ghost" className="w-full text-sidebar-foreground">
-                    Sign In
+                  <Button variant="ghost" className={cn(
+                    "w-full text-sidebar-foreground",
+                    !sidebarExpanded && "px-3"
+                  )}>
+                    <span className={cn(
+                      "whitespace-nowrap",
+                      sidebarExpanded ? "block" : "hidden"
+                    )}>Sign In</span>
+                    <BookOpen className={cn(
+                      "h-4 w-4",
+                      sidebarExpanded ? "hidden" : "block"
+                    )} />
                   </Button>
                 </Link>
               </div>
