@@ -36,6 +36,7 @@ const courseCategories = [
 const featuredCourses = [
   {
     id: 1,
+    slug: 'system-design-interview-masterclass',
     title: 'System Design Interview Masterclass',
     description: 'Master distributed systems, scalability patterns, and ace your system design interviews.',
     category: 'interview',
@@ -48,6 +49,7 @@ const featuredCourses = [
   },
   {
     id: 2,
+    slug: 'complete-devops-ai',
     title: 'Complete DevOps with AI Integration',
     description: 'From CI/CD pipelines to Kubernetes, with AI-powered automation techniques.',
     category: 'paths',
@@ -60,6 +62,7 @@ const featuredCourses = [
   },
   {
     id: 3,
+    slug: 'data-structures-algorithms',
     title: 'Data Structures & Algorithms',
     description: 'Comprehensive DSA course with 500+ problems and interview patterns.',
     category: 'interview',
@@ -72,6 +75,7 @@ const featuredCourses = [
   },
   {
     id: 4,
+    slug: 'react-typescript-deep-dive',
     title: 'React & TypeScript Deep Dive',
     description: 'Build production-ready applications with React 18 and TypeScript.',
     category: 'targeted',
@@ -223,35 +227,37 @@ const PublicHome = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {featuredCourses.map((course) => (
-              <Card key={course.id} className="hover:shadow-md transition-shadow cursor-pointer group overflow-hidden">
-                <div className="p-4 bg-primary/10">
-                  <h4 className="font-semibold text-primary text-center line-clamp-2">{course.title}</h4>
-                </div>
-                <CardContent className="p-4">
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{course.description}</p>
-                  <div className="flex items-center gap-2 text-sm mb-2">
-                    <Badge variant="secondary">{course.level}</Badge>
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="h-3 w-3" /> {course.duration}
-                    </span>
+              <Link key={course.id} to={`/course/${course.slug}`}>
+                <Card className="hover:shadow-md transition-shadow cursor-pointer group overflow-hidden h-full">
+                  <div className="p-4 bg-primary/10">
+                    <h4 className="font-semibold text-primary text-center line-clamp-2">{course.title}</h4>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="flex items-center gap-1 text-warning">
-                      <Star className="h-3 w-3 fill-current" /> {course.rating}
-                    </span>
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <Users className="h-3 w-3" /> {course.students.toLocaleString()}
-                    </span>
-                  </div>
-                </CardContent>
-                <CardFooter className="p-4 pt-0">
-                  <div className="flex flex-wrap gap-1">
-                    {course.tags.slice(0, 2).map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
-                    ))}
-                  </div>
-                </CardFooter>
-              </Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{course.description}</p>
+                    <div className="flex items-center gap-2 text-sm mb-2">
+                      <Badge variant="secondary">{course.level}</Badge>
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="h-3 w-3" /> {course.duration}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="flex items-center gap-1 text-warning">
+                        <Star className="h-3 w-3 fill-current" /> {course.rating}
+                      </span>
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Users className="h-3 w-3" /> {course.students.toLocaleString()}
+                      </span>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="p-4 pt-0">
+                    <div className="flex flex-wrap gap-1">
+                      {course.tags.slice(0, 2).map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                      ))}
+                    </div>
+                  </CardFooter>
+                </Card>
+              </Link>
             ))}
           </div>
         </section>

@@ -23,6 +23,7 @@ import CourseCategoryPage from './pages/CourseCategoryPage';
 import SearchResults from './pages/SearchResults';
 import LearningPathPage from './pages/LearningPathPage';
 import ArticleViewPage from './pages/ArticleViewPage';
+import CourseViewPage from './pages/CourseViewPage';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/technology/:slug" element={<TechnologyPage />} />
               <Route path="/explore/:category" element={<CourseCategoryPage />} />
               <Route path="/article/:slug" element={<ArticleViewPage />} />
+              <Route path="/course/:slug" element={<CourseViewPage />} />
               <Route path="/learn/:path" element={<LearningPathPage />} />
               
               {/* Protected Admin Routes */}
