@@ -157,12 +157,13 @@ const PublicHome = () => {
           <div className="container mx-auto px-4">
             <div className="flex items-center gap-4 overflow-x-auto py-2 scrollbar-hide">
               {technologies.map((tech) => (
-                <button
+                <Link
                   key={tech}
+                  to={`/technology/${tech.toLowerCase().replace(/\s+/g, '-').replace(/\//g, '')}`}
                   className="text-xs font-medium text-muted-foreground hover:text-primary whitespace-nowrap transition-colors"
                 >
                   {tech}
-                </button>
+                </Link>
               ))}
             </div>
           </div>
@@ -227,19 +228,21 @@ const PublicHome = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {courseCategories.map((cat) => (
-              <Card key={cat.id} className="cursor-pointer hover:shadow-md transition-shadow group">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                      <BookOpen className="h-6 w-6 text-primary" />
+              <Link key={cat.id} to={`/category/${cat.id}`}>
+                <Card className="cursor-pointer hover:shadow-md transition-shadow group h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                        <BookOpen className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground">{cat.name}</h3>
+                        <p className="text-sm text-muted-foreground">{cat.description}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">{cat.name}</h3>
-                      <p className="text-sm text-muted-foreground">{cat.description}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
@@ -258,29 +261,31 @@ const PublicHome = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {learningPaths.map((path) => (
-              <Card key={path.id} className="cursor-pointer hover:shadow-lg transition-all group overflow-hidden">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-xl ${path.color} text-white shadow-lg`}>
-                      <path.icon className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {path.title}
-                      </h4>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" /> {path.courses} Courses
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {path.hours}h
-                        </span>
+              <Link key={path.id} to={`/path/${path.id === 1 ? 'sde' : path.id === 2 ? 'system-architect' : path.id === 3 ? 'security-architect' : path.id === 4 ? 'devops' : path.id === 5 ? 'data-engineer' : 'full-stack'}`}>
+                <Card className="cursor-pointer hover:shadow-lg transition-all group overflow-hidden h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className={`p-3 rounded-xl ${path.color} text-white shadow-lg`}>
+                        <path.icon className="h-6 w-6" />
                       </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                          {path.title}
+                        </h4>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <BookOpen className="h-3 w-3" /> {path.courses} Courses
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> {path.hours}h
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
