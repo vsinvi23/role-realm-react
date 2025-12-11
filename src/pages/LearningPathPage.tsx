@@ -135,34 +135,35 @@ const LearningPathPage = () => {
   return (
     <PublicLayout>
       <div className="space-y-6">
-        {/* Hero */}
-        <section className="rounded-xl bg-primary text-primary-foreground p-8">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="p-3 rounded-xl bg-primary-foreground/20">
-              <Icon className="h-8 w-8" />
-            </div>
-            <div>
-              <Badge className="bg-primary-foreground/20 text-primary-foreground border-0 mb-1">Learning Path</Badge>
-              <h1 className="text-3xl font-bold">{data.title}</h1>
-            </div>
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-primary/10">
+            <Icon className="h-8 w-8 text-primary" />
           </div>
-          <p className="text-primary-foreground/90 max-w-2xl mb-6">{data.description}</p>
-          <div className="flex flex-wrap items-center gap-6 mb-6">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              <span>{data.totalCourses} Courses</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              <span>{data.totalHours} Hours</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              <span>{data.students.toLocaleString()} Students</span>
-            </div>
+          <div>
+            <Badge variant="secondary" className="mb-1">Learning Path</Badge>
+            <h1 className="text-2xl font-bold">{data.title}</h1>
           </div>
-          <Button size="lg" variant="secondary">Start Learning Path</Button>
-        </section>
+        </div>
+        
+        <p className="text-muted-foreground max-w-2xl">{data.description}</p>
+        
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <BookOpen className="h-5 w-5" />
+            <span>{data.totalCourses} Courses</span>
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Clock className="h-5 w-5" />
+            <span>{data.totalHours} Hours</span>
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Users className="h-5 w-5" />
+            <span>{data.students.toLocaleString()} Students</span>
+          </div>
+        </div>
+        
+        <Button size="lg">Start Learning Path</Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Curriculum */}
