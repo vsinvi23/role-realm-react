@@ -175,8 +175,25 @@ const ArticleViewPage = () => {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_200px] gap-8">
+            {/* Left Sidebar - Related Articles */}
+            <aside className="space-y-4 hidden lg:block">
+              <h4 className="font-semibold text-foreground text-sm uppercase tracking-wide">Recommended</h4>
+              <div className="space-y-4">
+                {relatedArticles.map((related) => (
+                  <div key={related.title} className="group cursor-pointer p-3 rounded-lg hover:bg-primary/5 transition-colors border border-transparent hover:border-border">
+                    <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">
+                      {related.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {related.category} • {related.readTime}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </aside>
+
             {/* Article Content */}
             <article className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-li:text-muted-foreground">
               {article.content.split('\n').map((paragraph, index) => {
@@ -225,22 +242,22 @@ const ArticleViewPage = () => {
               })}
             </article>
 
-            {/* Sidebar */}
-            <aside className="space-y-6">
+            {/* Right Sidebar - Actions & Tags */}
+            <aside className="space-y-6 hidden lg:block">
               {/* Actions */}
               <Card className="border-border">
                 <CardContent className="p-4 space-y-3">
-                  <Button variant="outline" className="w-full justify-start gap-2">
+                  <Button variant="outline" size="sm" className="w-full justify-start gap-2">
                     <Bookmark className="h-4 w-4" />
-                    Save Article
+                    Save
                   </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2">
+                  <Button variant="outline" size="sm" className="w-full justify-start gap-2">
                     <Share2 className="h-4 w-4" />
                     Share
                   </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2">
+                  <Button variant="outline" size="sm" className="w-full justify-start gap-2">
                     <MessageSquare className="h-4 w-4" />
-                    Discussion
+                    Discuss
                   </Button>
                 </CardContent>
               </Card>
@@ -248,31 +265,12 @@ const ArticleViewPage = () => {
               {/* Tags */}
               <Card className="border-border">
                 <CardContent className="p-4">
-                  <h4 className="font-semibold text-foreground mb-3">Tags</h4>
+                  <h4 className="font-semibold text-foreground mb-3 text-sm">Tags</h4>
                   <div className="flex flex-wrap gap-2">
                     {article.tags.map((tag) => (
                       <Badge key={tag} variant="outline" className="text-xs hover:bg-primary/10 cursor-pointer">
                         {tag}
                       </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Related Articles */}
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-foreground mb-3">Related Articles</h4>
-                  <div className="space-y-3">
-                    {relatedArticles.map((related) => (
-                      <div key={related.title} className="group cursor-pointer">
-                        <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                          {related.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {related.category} • {related.readTime}
-                        </p>
-                      </div>
                     ))}
                   </div>
                 </CardContent>
