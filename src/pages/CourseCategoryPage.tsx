@@ -74,26 +74,27 @@ const CourseCategoryPage = () => {
   return (
     <PublicLayout>
       <div className="space-y-6">
-        {/* Hero */}
-        <section className="rounded-xl bg-primary text-primary-foreground p-8">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="p-3 rounded-xl bg-primary-foreground/20">
-              <Icon className="h-6 w-6" />
-            </div>
-            <h1 className="text-3xl font-bold">{data.title}</h1>
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-primary/10">
+            <Icon className="h-6 w-6 text-primary" />
           </div>
-          <p className="text-primary-foreground/90 max-w-2xl mb-4">{data.description}</p>
-          <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">{data.courses.length} Courses Available</Badge>
-        </section>
+          <div>
+            <h1 className="text-2xl font-bold">{data.title}</h1>
+            <p className="text-muted-foreground">{data.description}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">{data.courses.length} Courses Available</Badge>
+        </div>
 
         {/* Courses Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.courses.map((course) => (
             <Card key={course.id} className="hover:shadow-md transition-shadow cursor-pointer group overflow-hidden">
-              <div className="h-28 bg-primary p-4 flex items-end">
-                <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-0">
-                  <Play className="h-3 w-3 mr-1" /> Course
-                </Badge>
+              <div className="h-20 bg-primary flex items-center justify-center">
+                <Play className="h-6 w-6 text-primary-foreground" />
               </div>
               <CardContent className="p-4">
                 <h3 className="font-semibold group-hover:text-primary transition-colors mb-2">{course.title}</h3>
