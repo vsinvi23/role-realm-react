@@ -398,13 +398,15 @@ const CourseOverview = ({
 
   return (
     <div className="max-w-6xl mx-auto">
+      {/* Back Link */}
+      <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
+        <ChevronLeft className="h-4 w-4 mr-1" /> Back to Courses
+      </Link>
+      
       {/* Hero Section */}
       <div className="bg-primary text-primary-foreground rounded-xl p-6 md:p-8 mb-8">
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <Link to="/" className="inline-flex items-center text-sm text-primary-foreground/80 hover:text-primary-foreground mb-4">
-              <ChevronLeft className="h-4 w-4 mr-1" /> Back to Courses
-            </Link>
             <Badge className="mb-3 bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30">
               {course.level}
             </Badge>
