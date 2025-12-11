@@ -436,15 +436,6 @@ const CourseOverview = ({
 
           {/* Enrollment Card */}
           <div className="bg-card text-card-foreground rounded-xl p-6 shadow-lg">
-            <div className="aspect-video bg-muted rounded-lg mb-4 flex items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5" />
-              <Button size="lg" className="rounded-full h-16 w-16">
-                <Play className="h-6 w-6 ml-1" />
-              </Button>
-              <span className="absolute bottom-3 left-3 text-xs bg-background/80 backdrop-blur px-2 py-1 rounded">
-                Preview this course
-              </span>
-            </div>
             
             <Button onClick={onEnroll} size="lg" className="w-full mb-3">
               <GraduationCap className="h-4 w-4 mr-2" />
