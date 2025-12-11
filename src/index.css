@@ -6,46 +6,46 @@
 
 @layer base {
   :root {
-    /* Enterprise Purple Theme - inspired by Fuel iX */
-    --background: 0 0% 97%;
-    --foreground: 222 47% 11%;
+    /* Dark Enterprise Theme - Grey, Black, Blue Purple */
+    --background: 240 10% 4%;
+    --foreground: 220 14% 96%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 240 10% 8%;
+    --card-foreground: 220 14% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 240 10% 8%;
+    --popover-foreground: 220 14% 96%;
 
     /* Purple primary accent */
-    --primary: 270 70% 45%;
+    --primary: 270 70% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 240 10% 16%;
+    --secondary-foreground: 220 14% 96%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 240 10% 16%;
+    --muted-foreground: 220 9% 56%;
 
-    --accent: 270 70% 95%;
-    --accent-foreground: 270 70% 35%;
+    --accent: 270 70% 20%;
+    --accent-foreground: 270 70% 80%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 270 70% 45%;
+    --border: 240 10% 18%;
+    --input: 240 10% 18%;
+    --ring: 270 70% 55%;
 
     --radius: 0.5rem;
 
     /* Sidebar - Dark theme */
-    --sidebar-background: 240 10% 10%;
+    --sidebar-background: 240 10% 6%;
     --sidebar-foreground: 220 14% 96%;
     --sidebar-primary: 270 70% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 10% 16%;
+    --sidebar-accent: 240 10% 12%;
     --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 240 10% 18%;
+    --sidebar-border: 240 10% 14%;
     --sidebar-ring: 270 70% 55%;
     --sidebar-muted: 220 9% 46%;
 
@@ -58,15 +58,15 @@
     --info-foreground: 0 0% 100%;
 
     /* Role colors */
-    --role-admin: 270 70% 45%;
+    --role-admin: 270 70% 55%;
     --role-viewer: 199 89% 48%;
     --role-editor: 142 71% 45%;
     --role-moderator: 38 92% 50%;
 
     /* Table */
-    --table-header: 220 14% 96%;
-    --table-row-hover: 220 14% 98%;
-    --table-border: 220 13% 91%;
+    --table-header: 240 10% 12%;
+    --table-row-hover: 240 10% 10%;
+    --table-border: 240 10% 18%;
   }
 
   .dark {
