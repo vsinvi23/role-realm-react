@@ -40,7 +40,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
     <div className="flex h-screen w-full overflow-hidden">
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-transform duration-300 lg:static lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-52 bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-transform duration-300 lg:static lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
