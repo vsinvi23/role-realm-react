@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   BookOpen, 
@@ -11,12 +11,20 @@ import {
   Briefcase,
   ChevronRight,
   Menu,
-  X
+  X,
+  SlidersHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -179,22 +187,74 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       {/* Main Content */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 lg:px-6">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div className="hidden sm:flex relative w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search courses, tutorials..." className="pl-9" />
+        <header className="h-14 bg-card border-b border-border flex items-center px-4 lg:px-6">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden mr-2"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          
+          {/* Centered Search */}
+          <div className="flex-1 flex justify-center">
+            <div className="flex items-center gap-2 w-full max-w-2xl">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                  placeholder="Search courses, articles, tutorials..." 
+                  className="pl-12 h-11 text-base rounded-full border-2 border-muted focus:border-primary"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const value = (e.target as HTMLInputElement).value;
+                      if (value.trim()) {
+                        window.location.href = `/search?q=${encodeURIComponent(value)}`;
+                      }
+                    }
+                  }}
+                />
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-full shrink-0">
+                    <SlidersHorizontal className="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72" align="end">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-sm">Advanced Search</h4>
+                    <div className="space-y-3">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Content Type</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['Courses', 'Articles', 'Tutorials', 'Practice'].map((type) => (
+                          <div key={type} className="flex items-center gap-2">
+                            <Checkbox id={type.toLowerCase()} />
+                            <Label htmlFor={type.toLowerCase()} className="text-sm font-normal">{type}</Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Difficulty</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['Beginner', 'Medium', 'Advanced'].map((level) => (
+                          <div key={level} className="flex items-center gap-2">
+                            <Checkbox id={level.toLowerCase()} />
+                            <Label htmlFor={level.toLowerCase()} className="text-sm font-normal">{level}</Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <Button className="w-full" size="sm">Apply Filters</Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+
+          {/* Auth buttons */}
+          <div className="flex items-center gap-3 ml-4">
             {isAuthenticated ? (
               <>
                 <Link to="/dashboard">
@@ -218,7 +278,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto bg-background p-6">
+        <main className="flex-1 overflow-auto bg-background p-4">
           {children}
         </main>
       </div>

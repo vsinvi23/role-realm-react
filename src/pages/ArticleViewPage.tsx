@@ -117,7 +117,7 @@ const ArticleViewPage = () => {
       <div className="min-h-screen bg-background">
         {/* Header Section */}
         <div className="bg-primary/5 border-b border-border">
-          <div className="max-w-4xl mx-auto px-6 py-8">
+          <div className="max-w-7xl mx-auto px-4 py-6">
             <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary mb-6 transition-colors">
               <ChevronLeft className="h-4 w-4 mr-1" />
               Back to Articles
@@ -175,18 +175,18 @@ const ArticleViewPage = () => {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_200px] gap-8">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_180px] gap-6">
             {/* Left Sidebar - Related Articles */}
-            <aside className="space-y-4 hidden lg:block">
+            <aside className="space-y-3 hidden lg:block">
               <h4 className="font-semibold text-foreground text-sm uppercase tracking-wide">Recommended</h4>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {relatedArticles.map((related) => (
-                  <div key={related.title} className="group cursor-pointer p-3 rounded-lg hover:bg-primary/5 transition-colors border border-transparent hover:border-border">
+                  <div key={related.title} className="group cursor-pointer p-2.5 rounded-lg hover:bg-primary/5 transition-colors">
                     <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">
                       {related.title}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {related.category} • {related.readTime}
                     </p>
                   </div>
@@ -243,7 +243,7 @@ const ArticleViewPage = () => {
             </article>
 
             {/* Right Sidebar - Actions & Tags */}
-            <aside className="space-y-6 hidden lg:block">
+            <aside className="space-y-4 hidden lg:block">
               {/* Actions */}
               <Card className="border-border">
                 <CardContent className="p-4 space-y-3">
