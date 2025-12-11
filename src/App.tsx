@@ -12,7 +12,7 @@ import DashboardPage from './pages/Dashboard';
 import ContentManagement from './pages/ContentManagement';
 import CourseManagement from './pages/CourseManagement';
 import ArticleManagement from './pages/ArticleManagement';
-import ReviewQueue from './pages/ReviewQueue';
+import MyTasks from './pages/MyTasks';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -33,7 +33,7 @@ const App = () => (
             <Route path="/content" element={<ContentManagement />} />
             <Route path="/courses" element={<CourseManagement />} />
             <Route path="/articles" element={<ArticleManagement />} />
-            <Route path="/review-queue" element={<ReviewQueue />} />
+            <Route path="/my-tasks" element={<MyTasks />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
