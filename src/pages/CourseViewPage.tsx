@@ -404,20 +404,20 @@ const CourseOverview = ({
       </Link>
       
       {/* Hero Section */}
-      <div className="bg-primary text-primary-foreground rounded-xl p-6 md:p-8 mb-8">
+      <div className="bg-primary/10 text-foreground rounded-xl p-6 md:p-8 mb-8">
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <Badge className="mb-3 bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30">
+            <Badge className="mb-3 bg-primary/20 text-primary hover:bg-primary/30">
               {course.level}
             </Badge>
             <h1 className="text-xl md:text-2xl font-bold mb-4">{course.title}</h1>
-            <p className="text-primary-foreground/90 mb-6">{course.description}</p>
+            <p className="text-muted-foreground mb-6">{course.description}</p>
             
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-warning text-warning" />
                 <span className="font-semibold">{course.rating}</span>
-                <span className="text-primary-foreground/70">({course.reviews.toLocaleString()} reviews)</span>
+                <span className="text-muted-foreground">({course.reviews.toLocaleString()} reviews)</span>
               </div>
               <div className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
@@ -429,19 +429,18 @@ const CourseOverview = ({
               </div>
             </div>
 
-            <div className="mt-4 text-sm text-primary-foreground/70">
-              Created by <span className="text-primary-foreground font-medium">{course.instructor}</span> • Last updated {course.lastUpdated}
+            <div className="mt-4 text-sm text-muted-foreground">
+              Created by <span className="text-foreground font-medium">{course.instructor}</span> • Last updated {course.lastUpdated}
             </div>
           </div>
 
-          {/* Enrollment Card */}
-          <div className="bg-card text-card-foreground rounded-xl p-6 shadow-lg">
-            
-            <Button onClick={onEnroll} size="lg" className="w-full mb-3">
+          {/* Enrollment Buttons */}
+          <div className="flex flex-col gap-3">
+            <Button onClick={onEnroll} size="lg">
               <GraduationCap className="h-4 w-4 mr-2" />
               Enroll Now
             </Button>
-            <Button variant="outline" size="lg" className="w-full">
+            <Button variant="outline" size="lg">
               Add to Wishlist
             </Button>
           </div>
