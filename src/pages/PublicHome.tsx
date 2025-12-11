@@ -27,10 +27,10 @@ const learningPaths = [
 ];
 
 const courseCategories = [
-  { id: 'bytes', name: 'Course Bytes', description: 'Quick, focused learning modules' },
-  { id: 'interview', name: 'Interview Prep', description: 'Ace your technical interviews' },
-  { id: 'targeted', name: 'Targeted Learning', description: 'Skill-specific deep dives' },
-  { id: 'paths', name: 'Learning Paths', description: 'Comprehensive role-based tracks' },
+  { id: 'bytes', name: 'Course Bytes', description: 'Quick, focused learning modules', path: '/explore/bytes' },
+  { id: 'interview', name: 'Interview Prep', description: 'Ace your technical interviews', path: '/explore/interview' },
+  { id: 'targeted', name: 'Targeted Learning', description: 'Skill-specific deep dives', path: '/explore/targeted' },
+  { id: 'paths', name: 'Learning Paths', description: 'Comprehensive role-based tracks', path: '/explore/paths' },
 ];
 
 const featuredCourses = [
@@ -142,7 +142,7 @@ const PublicHome = () => {
         <section>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {courseCategories.map((cat) => (
-              <Link key={cat.id} to={`/category/${cat.id}`}>
+              <Link key={cat.id} to={cat.path}>
                 <Card className="cursor-pointer hover:shadow-md transition-shadow group h-full">
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
@@ -173,7 +173,7 @@ const PublicHome = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {learningPaths.map((path) => (
-              <Link key={path.id} to={`/path/${path.id === 1 ? 'sde' : path.id === 2 ? 'system-architect' : path.id === 3 ? 'security-architect' : path.id === 4 ? 'devops' : path.id === 5 ? 'data-engineer' : 'full-stack'}`}>
+              <Link key={path.id} to={`/learn/${path.id === 1 ? 'sde' : path.id === 2 ? 'system-architect' : path.id === 3 ? 'security-architect' : path.id === 4 ? 'devops' : path.id === 5 ? 'data-engineer' : 'full-stack'}`}>
                 <Card className="cursor-pointer hover:shadow-md transition-all group h-full">
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">

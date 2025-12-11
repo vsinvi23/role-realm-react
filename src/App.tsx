@@ -40,8 +40,8 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/search" element={<SearchResults />} />
               <Route path="/technology/:slug" element={<TechnologyPage />} />
-              <Route path="/category/:category" element={<CourseCategoryPage />} />
-              <Route path="/path/:path" element={<LearningPathPage />} />
+              <Route path="/explore/:category" element={<CourseCategoryPage />} />
+              <Route path="/learn/:path" element={<LearningPathPage />} />
               
               {/* Protected Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute><ContentManagement /></ProtectedRoute>} />
