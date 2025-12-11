@@ -444,29 +444,6 @@ const CourseOverview = ({
             <Button variant="outline" size="lg" className="w-full">
               Add to Wishlist
             </Button>
-
-            <p className="text-xs text-center text-muted-foreground mt-4">
-              30-Day Money-Back Guarantee
-            </p>
-
-            <div className="border-t border-border mt-4 pt-4 space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>{course.duration} of content</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Video className="h-4 w-4 text-muted-foreground" />
-                <span>{totalVideos} video lessons</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span>{totalLessons} total lessons</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Award className="h-4 w-4 text-muted-foreground" />
-                <span>Certificate of completion</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
