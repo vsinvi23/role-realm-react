@@ -93,9 +93,8 @@ const CourseCategoryPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.courses.map((course) => (
             <Card key={course.id} className="hover:shadow-md transition-shadow cursor-pointer group overflow-hidden">
-              <div className="h-24 bg-primary/90 flex flex-col items-center justify-center p-4">
-                <Play className="h-6 w-6 text-primary-foreground mb-2" />
-                <h3 className="font-semibold text-primary-foreground text-center text-sm">{course.title}</h3>
+              <div className="p-4 bg-primary/10">
+                <h3 className="font-semibold text-foreground text-center">{course.title}</h3>
               </div>
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{course.description}</p>
