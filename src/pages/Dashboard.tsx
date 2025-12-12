@@ -1,7 +1,9 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, UserCheck, UserX, UserPlus, TrendingUp, TrendingDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, UserCheck, UserX, UserPlus, TrendingUp, TrendingDown, Shield, UserCog, ArrowRight } from 'lucide-react';
 import { getUserCounts, mockUsers } from '@/data/mockUsers';
+import { Link } from 'react-router-dom';
 
 const stats = [
   {
@@ -98,11 +100,51 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Navigate to <strong>Manage Users</strong> to view and manage all users, 
-              or visit <strong>Roles & Permissions</strong> to configure access levels.
-            </p>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link to="/users">
+              <Card className="hover:bg-accent/50 transition-colors cursor-pointer group">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                    <Users className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Manage Users</h3>
+                    <p className="text-sm text-muted-foreground">View and manage all users</p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </CardContent>
+              </Card>
+            </Link>
+            
+            <Link to="/roles">
+              <Card className="hover:bg-accent/50 transition-colors cursor-pointer group">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-warning/10">
+                    <Shield className="w-6 h-6 text-warning" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Roles & Permissions</h3>
+                    <p className="text-sm text-muted-foreground">Configure access levels</p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </CardContent>
+              </Card>
+            </Link>
+            
+            <Link to="/user-management">
+              <Card className="hover:bg-accent/50 transition-colors cursor-pointer group">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-success/10">
+                    <UserCog className="w-6 h-6 text-success" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">User Dashboard</h3>
+                    <p className="text-sm text-muted-foreground">Overview & analytics</p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </CardContent>
+              </Card>
+            </Link>
           </CardContent>
         </Card>
       </div>
