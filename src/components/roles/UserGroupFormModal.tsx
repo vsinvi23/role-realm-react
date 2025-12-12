@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,11 +33,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronRight, FolderTree } from 'lucide-react';
+import { ChevronRight, FolderTree, Shield } from 'lucide-react';
+
+export interface RoleOption {
+  id: string;
+  name: string;
+  color: string;
+}
 
 const userGroupSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   description: z.string().max(500).optional(),
+  roleId: z.string().min(1, 'Role is required'),
   assignToCategories: z.boolean().default(false),
   selectedCategories: z.array(z.string()).default([]),
 });
@@ -48,8 +55,9 @@ interface UserGroupFormModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: UserGroupFormData) => void;
-  group?: UserGroup | null;
+  group?: (UserGroup & { roleId?: string }) | null;
   categories: Category[];
+  roles?: RoleOption[];
   isLoading?: boolean;
 }
 
@@ -75,6 +83,7 @@ export function UserGroupFormModal({
   onSubmit,
   group,
   categories,
+  roles = [],
   isLoading = false,
 }: UserGroupFormModalProps) {
   const isEditing = !!group;
@@ -83,12 +92,35 @@ export function UserGroupFormModal({
   const form = useForm<UserGroupFormData>({
     resolver: zodResolver(userGroupSchema),
     defaultValues: {
-      name: group?.name || '',
-      description: group?.description || '',
+      name: '',
+      description: '',
+      roleId: 'viewer',
       assignToCategories: false,
       selectedCategories: [],
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      if (group) {
+        form.reset({
+          name: group.name || '',
+          description: group.description || '',
+          roleId: group.roleId || 'viewer',
+          assignToCategories: false,
+          selectedCategories: [],
+        });
+      } else {
+        form.reset({
+          name: '',
+          description: '',
+          roleId: roles.length > 0 ? roles[roles.length - 1].id : 'viewer',
+          assignToCategories: false,
+          selectedCategories: [],
+        });
+      }
+    }
+  }, [open, group, form, roles]);
 
   const assignToCategories = form.watch('assignToCategories');
   const selectedCategories = form.watch('selectedCategories');
@@ -128,7 +160,7 @@ export function UserGroupFormModal({
           <DialogDescription>
             {isEditing
               ? 'Update the user group details.'
-              : 'Create a new user group and optionally assign it to categories.'}
+              : 'Create a new user group and assign it to a role.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -161,6 +193,40 @@ export function UserGroupFormModal({
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="roleId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Associated Role
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {roles.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${role.color}`} />
+                            {role.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Members of this group will inherit permissions from the selected role
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
