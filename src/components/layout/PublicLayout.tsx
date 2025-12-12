@@ -31,11 +31,9 @@ interface PublicLayoutProps {
 }
 
 const navItems = [
-  { icon: Home, label: 'Home', href: '/' },
   { icon: BookOpen, label: 'Courses', href: '/explore/courses' },
   { icon: GraduationCap, label: 'Learning Paths', href: '/explore/paths' },
   { icon: FileText, label: 'Articles', href: '/explore/articles' },
-  { icon: Code, label: 'Practice', href: '/explore/practice' },
   { icon: Briefcase, label: 'Interview Prep', href: '/explore/interview' },
 ];
 
