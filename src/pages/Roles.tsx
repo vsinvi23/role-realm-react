@@ -4,68 +4,53 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Eye, Settings2, Plus, Download, Check, X, Info, ChevronDown, ChevronUp, FolderOpen, BookOpen, FileText, BarChart3, Settings, UserCog } from 'lucide-react';
+import { Shield, Users, Eye, Plus, Download, Check, X, Info, ChevronDown, ChevronUp, FolderOpen, BookOpen, FileText, BarChart3, Settings, UserCog, Pencil, Trash2, MoreHorizontal } from 'lucide-react';
 import { UserGroupList } from '@/components/roles/UserGroupList';
 import { UserGroupFormModal } from '@/components/roles/UserGroupFormModal';
 import { MemberManagementModal } from '@/components/roles/MemberManagementModal';
+import { RoleFormModal, RoleDefinition } from '@/components/roles/RoleFormModal';
 import { mockUserGroups, mockCategories } from '@/data/mockContent';
 import { UserGroup, GroupMember } from '@/types/content';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
-// Role Definitions
-interface RoleDefinition {
-  id: string;
-  name: string;
-  description: string;
-  userCount: number;
-  color: string;
-}
-
-const roleDefinitions: RoleDefinition[] = [
+// Default Role Definitions
+const defaultRoles: RoleDefinition[] = [
   {
-    id: 'super_admin',
-    name: 'Super Admin',
-    description: 'Complete system control with unrestricted access to all modules, settings, and administrative functions. Can manage other admins.',
-    userCount: 3,
+    id: 'master',
+    name: 'Master',
+    description: 'Complete system control with unrestricted access to all modules, settings, and administrative functions. Highest privilege level.',
+    userCount: 2,
     color: 'bg-red-500/15 text-red-500 border-red-500/30',
+    isDefault: true,
   },
   {
     id: 'admin',
     name: 'Admin',
-    description: 'Full administrative access to manage users, content, and settings. Cannot modify Super Admin accounts or critical system settings.',
-    userCount: 12,
+    description: 'Full administrative access to manage users, content, and settings. Cannot modify Master accounts or critical system settings.',
+    userCount: 8,
     color: 'bg-orange-500/15 text-orange-500 border-orange-500/30',
+    isDefault: true,
   },
   {
     id: 'manager',
     name: 'Manager',
-    description: 'Oversees teams and content workflows. Can approve/publish content, manage assignments, and view analytics. Limited user management.',
-    userCount: 28,
+    description: 'Oversees teams and content workflows. Can approve/publish content, manage assignments, and view analytics.',
+    userCount: 24,
     color: 'bg-purple-500/15 text-purple-500 border-purple-500/30',
-  },
-  {
-    id: 'editor',
-    name: 'Editor',
-    description: 'Creates and edits content across courses and articles. Can submit for review but cannot publish without approval.',
-    userCount: 65,
-    color: 'bg-blue-500/15 text-blue-500 border-blue-500/30',
-  },
-  {
-    id: 'contributor',
-    name: 'Contributor',
-    description: 'Can create draft content and suggest edits. All submissions require editorial review before visibility.',
-    userCount: 142,
-    color: 'bg-green-500/15 text-green-500 border-green-500/30',
+    isDefault: true,
   },
   {
     id: 'viewer',
     name: 'Viewer',
     description: 'Read-only access to published content and basic analytics. Cannot create, edit, or delete any content.',
-    userCount: 890,
+    userCount: 156,
     color: 'bg-gray-500/15 text-gray-500 border-gray-500/30',
+    isDefault: true,
   },
 ];
 
@@ -113,109 +98,39 @@ type PermissionMatrix = {
   };
 };
 
-const permissionMatrix: PermissionMatrix = {
-  'User Management': {
-    view: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    list: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    search: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    download: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    create: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    edit: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    publish: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    assign: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    soft_delete: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    hard_delete: { super_admin: true, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    manage_roles: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    manage_permissions: { super_admin: true, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    configure: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    integrations: { super_admin: true, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    notifications: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-  },
-  'Content': {
-    view: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: true },
-    list: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: true },
-    search: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: true },
-    download: { super_admin: true, admin: true, manager: true, editor: true, contributor: false, viewer: false },
-    create: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: false },
-    edit: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: false },
-    publish: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    assign: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    soft_delete: { super_admin: true, admin: true, manager: true, editor: true, contributor: false, viewer: false },
-    hard_delete: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    manage_roles: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    manage_permissions: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    configure: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    integrations: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    notifications: { super_admin: true, admin: true, manager: true, editor: true, contributor: false, viewer: false },
-  },
-  'Courses': {
-    view: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: true },
-    list: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: true },
-    search: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: true },
-    download: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: false },
-    create: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: false },
-    edit: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: false },
-    publish: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    assign: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    soft_delete: { super_admin: true, admin: true, manager: true, editor: true, contributor: false, viewer: false },
-    hard_delete: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    manage_roles: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    manage_permissions: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    configure: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    integrations: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    notifications: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: false },
-  },
-  'Articles': {
-    view: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: true },
-    list: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: true },
-    search: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: true },
-    download: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: false },
-    create: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: false },
-    edit: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: false },
-    publish: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    assign: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    soft_delete: { super_admin: true, admin: true, manager: true, editor: true, contributor: false, viewer: false },
-    hard_delete: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    manage_roles: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    manage_permissions: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    configure: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    integrations: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    notifications: { super_admin: true, admin: true, manager: true, editor: true, contributor: true, viewer: false },
-  },
-  'Analytics': {
-    view: { super_admin: true, admin: true, manager: true, editor: true, contributor: false, viewer: true },
-    list: { super_admin: true, admin: true, manager: true, editor: true, contributor: false, viewer: true },
-    search: { super_admin: true, admin: true, manager: true, editor: true, contributor: false, viewer: true },
-    download: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    create: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    edit: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    publish: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    assign: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    soft_delete: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    hard_delete: { super_admin: true, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    manage_roles: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    manage_permissions: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    configure: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-    integrations: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    notifications: { super_admin: true, admin: true, manager: true, editor: false, contributor: false, viewer: false },
-  },
-  'Settings': {
-    view: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    list: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    search: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    download: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    create: { super_admin: true, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    edit: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    publish: { super_admin: false, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    assign: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    soft_delete: { super_admin: true, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    hard_delete: { super_admin: true, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    manage_roles: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    manage_permissions: { super_admin: true, admin: false, manager: false, editor: false, contributor: false, viewer: false },
-    configure: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    integrations: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-    notifications: { super_admin: true, admin: true, manager: false, editor: false, contributor: false, viewer: false },
-  },
+// Generate permission matrix dynamically based on roles
+const generatePermissionMatrix = (roles: RoleDefinition[]): PermissionMatrix => {
+  const matrix: PermissionMatrix = {};
+  
+  moduleConfig.forEach(({ name: module }) => {
+    matrix[module] = {};
+    permissionDefinitions.forEach(perm => {
+      matrix[module][perm.id] = {};
+      roles.forEach(role => {
+        // Default permissions based on role hierarchy
+        const isMaster = role.id === 'master' || role.name.toLowerCase() === 'master';
+        const isAdmin = role.id === 'admin' || role.name.toLowerCase() === 'admin';
+        const isManager = role.id === 'manager' || role.name.toLowerCase() === 'manager';
+        const isViewer = role.id === 'viewer' || role.name.toLowerCase() === 'viewer';
+        
+        // Set default permissions
+        if (isMaster) {
+          matrix[module][perm.id][role.id] = true;
+        } else if (isAdmin) {
+          matrix[module][perm.id][role.id] = !['hard_delete', 'manage_permissions'].includes(perm.id);
+        } else if (isManager) {
+          matrix[module][perm.id][role.id] = ['view', 'list', 'search', 'download', 'create', 'edit', 'publish', 'assign', 'soft_delete', 'notifications'].includes(perm.id);
+        } else if (isViewer) {
+          matrix[module][perm.id][role.id] = ['view', 'list', 'search'].includes(perm.id);
+        } else {
+          // Custom roles - give moderate permissions
+          matrix[module][perm.id][role.id] = ['view', 'list', 'search', 'create', 'edit'].includes(perm.id);
+        }
+      });
+    });
+  });
+  
+  return matrix;
 };
 
 // Permission Cell Component
@@ -239,20 +154,24 @@ const ModulePermissionCard = ({
   icon: Icon, 
   color,
   isOpen,
-  onToggle 
+  onToggle,
+  roles,
+  permissionMatrix
 }: { 
   module: string; 
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   isOpen: boolean;
   onToggle: () => void;
+  roles: RoleDefinition[];
+  permissionMatrix: PermissionMatrix;
 }) => {
   const modulePermissions = permissionMatrix[module] || {};
   const allowedCount = permissionDefinitions.reduce((acc, perm) => {
-    return acc + roleDefinitions.filter(role => modulePermissions[perm.id]?.[role.id]).length;
+    return acc + roles.filter(role => modulePermissions[perm.id]?.[role.id]).length;
   }, 0);
-  const totalCount = permissionDefinitions.length * roleDefinitions.length;
-  const percentage = Math.round((allowedCount / totalCount) * 100);
+  const totalCount = permissionDefinitions.length * roles.length;
+  const percentage = totalCount > 0 ? Math.round((allowedCount / totalCount) * 100) : 0;
 
   return (
     <Collapsible open={isOpen} onOpenChange={onToggle}>
@@ -273,7 +192,7 @@ const ModulePermissionCard = ({
               </div>
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center gap-1">
-                  {roleDefinitions.slice(0, 3).map(role => {
+                  {roles.slice(0, 3).map(role => {
                     const roleAllowed = permissionDefinitions.filter(
                       perm => modulePermissions[perm.id]?.[role.id]
                     ).length;
@@ -304,7 +223,7 @@ const ModulePermissionCard = ({
                 <TableHeader>
                   <TableRow className="bg-muted/30">
                     <TableHead className="w-[180px]">Permission</TableHead>
-                    {roleDefinitions.map((role) => (
+                    {roles.map((role) => (
                       <TableHead key={role.id} className="text-center w-[90px]">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -334,7 +253,7 @@ const ModulePermissionCard = ({
                           </TooltipContent>
                         </Tooltip>
                       </TableCell>
-                      {roleDefinitions.map((role) => (
+                      {roles.map((role) => (
                         <TableCell key={role.id} className="text-center p-2">
                           <PermissionCell 
                             allowed={modulePermissions[perm.id]?.[role.id] ?? false} 
@@ -353,13 +272,30 @@ const ModulePermissionCard = ({
   );
 };
 
+// Extended UserGroup type with role association
+interface UserGroupWithRole extends UserGroup {
+  roleId?: string;
+}
+
 export default function RolesPage() {
-  const [userGroups, setUserGroups] = useState<UserGroup[]>(mockUserGroups);
+  const [roles, setRoles] = useState<RoleDefinition[]>(defaultRoles);
+  const [userGroups, setUserGroups] = useState<UserGroupWithRole[]>(
+    mockUserGroups.map(g => ({ ...g, roleId: 'viewer' }))
+  );
   const [groupModalOpen, setGroupModalOpen] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<UserGroup | null>(null);
+  const [editingGroup, setEditingGroup] = useState<UserGroupWithRole | null>(null);
   const [memberModalOpen, setMemberModalOpen] = useState(false);
-  const [managingGroup, setManagingGroup] = useState<UserGroup | null>(null);
+  const [managingGroup, setManagingGroup] = useState<UserGroupWithRole | null>(null);
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
+  
+  // Role management state
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<RoleDefinition | null>(null);
+  const [deleteRoleDialogOpen, setDeleteRoleDialogOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<RoleDefinition | null>(null);
+
+  // Generate permission matrix based on current roles
+  const permissionMatrix = generatePermissionMatrix(roles);
 
   const handleToggleModule = (moduleName: string) => {
     setOpenModules(prev => ({ ...prev, [moduleName]: !prev[moduleName] }));
@@ -375,13 +311,70 @@ export default function RolesPage() {
     setOpenModules({});
   };
 
+  // Role handlers
+  const handleCreateRole = () => {
+    setEditingRole(null);
+    setRoleModalOpen(true);
+  };
+
+  const handleEditRole = (role: RoleDefinition) => {
+    setEditingRole(role);
+    setRoleModalOpen(true);
+  };
+
+  const handleDeleteRoleClick = (role: RoleDefinition) => {
+    if (role.isDefault) {
+      toast.error('Default roles cannot be deleted');
+      return;
+    }
+    setRoleToDelete(role);
+    setDeleteRoleDialogOpen(true);
+  };
+
+  const handleDeleteRole = () => {
+    if (roleToDelete) {
+      setRoles(prev => prev.filter(r => r.id !== roleToDelete.id));
+      // Update user groups that were using this role
+      setUserGroups(prev => prev.map(g => 
+        g.roleId === roleToDelete.id ? { ...g, roleId: 'viewer' } : g
+      ));
+      toast.success(`Role "${roleToDelete.name}" deleted`);
+      setDeleteRoleDialogOpen(false);
+      setRoleToDelete(null);
+    }
+  };
+
+  const handleRoleSubmit = (data: { name: string; description?: string; color: string }) => {
+    if (editingRole) {
+      setRoles(prev => prev.map(r => 
+        r.id === editingRole.id 
+          ? { ...r, name: data.name, description: data.description || '', color: data.color }
+          : r
+      ));
+      toast.success('Role updated');
+    } else {
+      const newRole: RoleDefinition = {
+        id: `role-${Date.now()}`,
+        name: data.name,
+        description: data.description || '',
+        userCount: 0,
+        color: data.color,
+        isDefault: false,
+      };
+      setRoles(prev => [...prev, newRole]);
+      toast.success(`Role "${data.name}" created`);
+    }
+    setRoleModalOpen(false);
+  };
+
+  // User group handlers
   const handleCreateGroup = () => {
     setEditingGroup(null);
     setGroupModalOpen(true);
   };
 
   const handleEditGroup = (group: UserGroup) => {
-    setEditingGroup(group);
+    setEditingGroup(group as UserGroupWithRole);
     setGroupModalOpen(true);
   };
 
@@ -391,30 +384,31 @@ export default function RolesPage() {
   };
 
   const handleManageMembers = (group: UserGroup) => {
-    setManagingGroup(group);
+    setManagingGroup(group as UserGroupWithRole);
     setMemberModalOpen(true);
   };
 
-  const handleGroupSubmit = (data: { name: string; description?: string; assignToCategories: boolean; selectedCategories: string[] }) => {
+  const handleGroupSubmit = (data: { name: string; description?: string; assignToCategories: boolean; selectedCategories: string[]; roleId?: string }) => {
     if (editingGroup) {
       setUserGroups((prev) =>
         prev.map((g) =>
           g.id === editingGroup.id
-            ? { ...g, name: data.name, description: data.description }
+            ? { ...g, name: data.name, description: data.description, roleId: data.roleId }
             : g
         )
       );
       toast.success('User group updated');
     } else {
-      const newGroup: UserGroup = {
+      const newGroup: UserGroupWithRole = {
         id: `ug-${Date.now()}`,
         name: data.name,
         description: data.description,
         members: [],
         permissions: [],
+        roleId: data.roleId || 'viewer',
       };
       setUserGroups((prev) => [...prev, newGroup]);
-      toast.success(`User group "${data.name}" created${data.assignToCategories && data.selectedCategories.length > 0 ? ` and assigned to ${data.selectedCategories.length} categories` : ''}`);
+      toast.success(`User group "${data.name}" created`);
     }
     setGroupModalOpen(false);
   };
@@ -472,7 +466,7 @@ export default function RolesPage() {
   };
 
   const handleExportMatrix = () => {
-    const headers = ['Module', 'Permission', ...roleDefinitions.map(r => r.name)];
+    const headers = ['Module', 'Permission', ...roles.map(r => r.name)];
     const rows: string[][] = [];
     
     moduleConfig.forEach(({ name: module }) => {
@@ -480,7 +474,7 @@ export default function RolesPage() {
         const row = [
           module,
           perm.name,
-          ...roleDefinitions.map(role => 
+          ...roles.map(role => 
             permissionMatrix[module]?.[perm.id]?.[role.id] ? 'Yes' : 'No'
           )
         ];
@@ -502,6 +496,17 @@ export default function RolesPage() {
   const currentManagingGroup = managingGroup
     ? userGroups.find((g) => g.id === managingGroup.id) || managingGroup
     : null;
+
+  // Get role name by ID for display
+  const getRoleName = (roleId?: string) => {
+    const role = roles.find(r => r.id === roleId);
+    return role?.name || 'No Role';
+  };
+
+  const getRoleColor = (roleId?: string) => {
+    const role = roles.find(r => r.id === roleId);
+    return role?.color || 'bg-gray-500/15 text-gray-500 border-gray-500/30';
+  };
 
   return (
     <DashboardLayout>
@@ -532,49 +537,152 @@ export default function RolesPage() {
 
           {/* User Groups Tab */}
           <TabsContent value="groups" className="mt-6">
-            <UserGroupList
-              groups={userGroups}
-              onCreateGroup={handleCreateGroup}
-              onEditGroup={handleEditGroup}
-              onDeleteGroup={handleDeleteGroup}
-              onManageMembers={handleManageMembers}
-            />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">User Groups</CardTitle>
+                  <CardDescription>
+                    Groups are associated with roles to define access levels
+                  </CardDescription>
+                </div>
+                <Button onClick={handleCreateGroup}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Group
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Group Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Associated Role</TableHead>
+                      <TableHead>Members</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userGroups.map((group) => (
+                      <TableRow key={group.id}>
+                        <TableCell className="font-medium">{group.name}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
+                          {group.description || '—'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={getRoleColor(group.roleId)}>
+                            {getRoleName(group.roleId)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{group.members.length} members</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleManageMembers(group)}>
+                                <Users className="w-4 h-4 mr-2" />
+                                Manage Members
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditGroup(group)}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteGroup(group.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {userGroups.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                          No user groups created yet
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Roles Tab */}
           <TabsContent value="roles" className="mt-6 space-y-6">
             {/* Role Definitions */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  Role Definitions
-                </CardTitle>
-                <CardDescription>
-                  Standard roles with their descriptions and current user counts
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    Role Definitions
+                  </CardTitle>
+                  <CardDescription>
+                    Create and manage roles with their descriptions
+                  </CardDescription>
+                </div>
+                <Button onClick={handleCreateRole}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Role
+                </Button>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {roleDefinitions.map((role) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {roles.map((role) => (
                     <Card key={role.id} className="border hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className={`p-2 rounded-lg ${role.color}`}>
-                            <Shield className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-foreground">{role.name}</h3>
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
-                              {role.description}
-                            </p>
-                            <div className="flex items-center gap-2 mt-3">
-                              <Users className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">
-                                {role.userCount} users
-                              </span>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div className={`p-2 rounded-lg ${role.color}`}>
+                              <Shield className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-foreground">{role.name}</h3>
+                                {role.isDefault && (
+                                  <Badge variant="secondary" className="text-xs">Default</Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+                                {role.description}
+                              </p>
+                              <div className="flex items-center gap-2 mt-3">
+                                <Users className="w-3 h-3 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">
+                                  {role.userCount} users
+                                </span>
+                              </div>
                             </div>
                           </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditRole(role)}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteRoleClick(role)}
+                                className="text-destructive"
+                                disabled={role.isDefault}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </CardContent>
                     </Card>
@@ -657,6 +765,8 @@ export default function RolesPage() {
                   color={color}
                   isOpen={openModules[name] || false}
                   onToggle={() => handleToggleModule(name)}
+                  roles={roles}
+                  permissionMatrix={permissionMatrix}
                 />
               ))}
             </div>
@@ -667,8 +777,8 @@ export default function RolesPage() {
                 <CardTitle className="text-base">Role Permission Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {roleDefinitions.map((role) => {
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                  {roles.map((role) => {
                     const totalPermissions = moduleConfig.reduce((acc, { name: module }) => {
                       return acc + permissionDefinitions.filter(
                         perm => permissionMatrix[module]?.[perm.id]?.[role.id]
@@ -703,6 +813,7 @@ export default function RolesPage() {
           onSubmit={handleGroupSubmit}
           group={editingGroup}
           categories={mockCategories}
+          roles={roles}
         />
 
         <MemberManagementModal
@@ -713,6 +824,32 @@ export default function RolesPage() {
           onRemoveMember={handleRemoveMember}
           onChangeRole={handleChangeRole}
         />
+
+        <RoleFormModal
+          open={roleModalOpen}
+          onClose={() => setRoleModalOpen(false)}
+          onSubmit={handleRoleSubmit}
+          role={editingRole}
+        />
+
+        {/* Delete Role Confirmation Dialog */}
+        <AlertDialog open={deleteRoleDialogOpen} onOpenChange={setDeleteRoleDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Role</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete the role "{roleToDelete?.name}"? 
+                User groups associated with this role will be reassigned to "Viewer".
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteRole} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
