@@ -62,8 +62,8 @@ const settingsSection: NavSection = {
   label: 'Settings',
   href: '/settings',
   items: [
+    { icon: Globe, label: 'System Settings', href: '/settings' },
     { icon: FolderTree, label: 'Category Management', href: '/content' },
-    { icon: Globe, label: 'Web Settings', href: '/web-settings' },
   ],
 };
 

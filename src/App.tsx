@@ -16,6 +16,7 @@ import CourseManagement from './pages/CourseManagement';
 import ArticleManagement from './pages/ArticleManagement';
 import MyTasks from './pages/MyTasks';
 import Analytics from './pages/Analytics';
+import Settings from './pages/Settings';
 import PublicHome from './pages/PublicHome';
 import Auth from './pages/Auth';
 import TechnologyPage from './pages/TechnologyPage';
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/articles" element={<ProtectedRoute><ArticleManagement /></ProtectedRoute>} />
               <Route path="/my-tasks" element={<ProtectedRoute><MyTasks /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
