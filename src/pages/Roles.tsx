@@ -8,7 +8,7 @@ import { Shield, Users, Eye, Plus, Download, Check, X, Info, ChevronDown, Chevro
 import { UserGroupList } from '@/components/roles/UserGroupList';
 import { UserGroupFormModal } from '@/components/roles/UserGroupFormModal';
 import { MemberManagementModal } from '@/components/roles/MemberManagementModal';
-import { RoleFormModal, RoleDefinition } from '@/components/roles/RoleFormModal';
+import { RoleFormModal, RoleDefinition, RolePermissions, moduleDefinitions, permissionDefinitions as permissionDefs } from '@/components/roles/RoleFormModal';
 import { mockUserGroups, mockCategories } from '@/data/mockContent';
 import { UserGroup, GroupMember } from '@/types/content';
 import { toast } from 'sonner';
@@ -98,33 +98,48 @@ type PermissionMatrix = {
   };
 };
 
+// Map module names to IDs for permission lookup
+const moduleNameToId: Record<string, string> = {
+  'User Management': 'user_management',
+  'Content': 'content',
+  'Courses': 'courses',
+  'Articles': 'articles',
+  'Analytics': 'analytics',
+  'Settings': 'settings',
+};
+
 // Generate permission matrix dynamically based on roles
 const generatePermissionMatrix = (roles: RoleDefinition[]): PermissionMatrix => {
   const matrix: PermissionMatrix = {};
   
   moduleConfig.forEach(({ name: module }) => {
     matrix[module] = {};
+    const moduleId = moduleNameToId[module];
+    
     permissionDefinitions.forEach(perm => {
       matrix[module][perm.id] = {};
       roles.forEach(role => {
-        // Default permissions based on role hierarchy
-        const isMaster = role.id === 'master' || role.name.toLowerCase() === 'master';
-        const isAdmin = role.id === 'admin' || role.name.toLowerCase() === 'admin';
-        const isManager = role.id === 'manager' || role.name.toLowerCase() === 'manager';
-        const isViewer = role.id === 'viewer' || role.name.toLowerCase() === 'viewer';
-        
-        // Set default permissions
-        if (isMaster) {
-          matrix[module][perm.id][role.id] = true;
-        } else if (isAdmin) {
-          matrix[module][perm.id][role.id] = !['hard_delete', 'manage_permissions'].includes(perm.id);
-        } else if (isManager) {
-          matrix[module][perm.id][role.id] = ['view', 'list', 'search', 'download', 'create', 'edit', 'publish', 'assign', 'soft_delete', 'notifications'].includes(perm.id);
-        } else if (isViewer) {
-          matrix[module][perm.id][role.id] = ['view', 'list', 'search'].includes(perm.id);
+        // Check if role has custom permissions defined
+        if (role.permissions && role.permissions[moduleId]) {
+          matrix[module][perm.id][role.id] = role.permissions[moduleId].includes(perm.id);
         } else {
-          // Custom roles - give moderate permissions
-          matrix[module][perm.id][role.id] = ['view', 'list', 'search', 'create', 'edit'].includes(perm.id);
+          // Fallback to default permissions based on role hierarchy
+          const isMaster = role.id === 'master' || role.name.toLowerCase() === 'master';
+          const isAdmin = role.id === 'admin' || role.name.toLowerCase() === 'admin';
+          const isManager = role.id === 'manager' || role.name.toLowerCase() === 'manager';
+          const isViewer = role.id === 'viewer' || role.name.toLowerCase() === 'viewer';
+          
+          if (isMaster) {
+            matrix[module][perm.id][role.id] = true;
+          } else if (isAdmin) {
+            matrix[module][perm.id][role.id] = !['hard_delete', 'manage_permissions'].includes(perm.id);
+          } else if (isManager) {
+            matrix[module][perm.id][role.id] = ['view', 'list', 'search', 'download', 'create', 'edit', 'publish', 'assign', 'soft_delete', 'notifications'].includes(perm.id);
+          } else if (isViewer) {
+            matrix[module][perm.id][role.id] = ['view', 'list', 'search'].includes(perm.id);
+          } else {
+            matrix[module][perm.id][role.id] = ['view', 'list', 'search', 'create', 'edit'].includes(perm.id);
+          }
         }
       });
     });
@@ -344,11 +359,11 @@ export default function RolesPage() {
     }
   };
 
-  const handleRoleSubmit = (data: { name: string; description?: string; color: string }) => {
+  const handleRoleSubmit = (data: { name: string; description?: string; color: string; permissions: RolePermissions }) => {
     if (editingRole) {
       setRoles(prev => prev.map(r => 
         r.id === editingRole.id 
-          ? { ...r, name: data.name, description: data.description || '', color: data.color }
+          ? { ...r, name: data.name, description: data.description || '', color: data.color, permissions: data.permissions }
           : r
       ));
       toast.success('Role updated');
@@ -360,6 +375,7 @@ export default function RolesPage() {
         userCount: 0,
         color: data.color,
         isDefault: false,
+        permissions: data.permissions,
       };
       setRoles(prev => [...prev, newRole]);
       toast.success(`Role "${data.name}" created`);
