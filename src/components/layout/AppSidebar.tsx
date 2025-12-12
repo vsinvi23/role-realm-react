@@ -145,34 +145,25 @@ export function AppSidebar() {
         </Tooltip>
       ) : (
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <div className="flex items-center">
-            <Link
-              to={section.href}
+          <CollapsibleTrigger asChild>
+            <button
               className={cn(
-                'flex-1 flex items-center gap-3 px-3 py-2.5 rounded-l-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
-                isActive && 'text-sidebar-foreground',
-                location.pathname === section.href && 'bg-sidebar-accent'
+                'w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+                isActive && 'text-sidebar-foreground bg-sidebar-accent'
               )}
             >
-              <section.icon className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">{section.label}</span>
-            </Link>
-            <CollapsibleTrigger asChild>
-              <button
+              <div className="flex items-center gap-3">
+                <section.icon className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm font-medium">{section.label}</span>
+              </div>
+              <ChevronDown
                 className={cn(
-                  'px-2 py-2.5 rounded-r-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
-                  isActive && 'text-sidebar-foreground'
+                  'w-4 h-4 transition-transform duration-200',
+                  isOpen && 'rotate-180'
                 )}
-              >
-                <ChevronDown
-                  className={cn(
-                    'w-4 h-4 transition-transform duration-200',
-                    isOpen && 'rotate-180'
-                  )}
-                />
-              </button>
-            </CollapsibleTrigger>
-          </div>
+              />
+            </button>
+          </CollapsibleTrigger>
           <CollapsibleContent className="mt-1 space-y-1">
             {section.items.map((item) => renderNavItem(item, true))}
           </CollapsibleContent>
