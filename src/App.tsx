@@ -50,9 +50,9 @@ const App = () => (
               {/* Protected Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute><ContentManagement /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route path="/user-management" element={<ProtectedRoute requireAdmin><UserManagementDashboard /></ProtectedRoute>} />
-              <Route path="/users" element={<ProtectedRoute requireAdmin><UserManagementPage /></ProtectedRoute>} />
-              <Route path="/roles" element={<ProtectedRoute requireAdmin><RolesPage /></ProtectedRoute>} />
+              <Route path="/user-management" element={<ProtectedRoute><UserManagementDashboard /></ProtectedRoute>} />
+              <Route path="/users" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />
+              <Route path="/roles" element={<ProtectedRoute><RolesPage /></ProtectedRoute>} />
               <Route path="/content" element={<ProtectedRoute><ContentManagement /></ProtectedRoute>} />
               <Route path="/courses" element={<ProtectedRoute><CourseManagement /></ProtectedRoute>} />
               <Route path="/articles" element={<ProtectedRoute><ArticleManagement /></ProtectedRoute>} />
