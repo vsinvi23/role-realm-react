@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Eye, Settings2, Plus, Download, Check, X, Info } from 'lucide-react';
+import { Shield, Users, Eye, Settings2, Plus, Download, Check, X, Info, ChevronDown, ChevronUp, FolderOpen, BookOpen, FileText, BarChart3, Settings, UserCog } from 'lucide-react';
 import { UserGroupList } from '@/components/roles/UserGroupList';
 import { UserGroupFormModal } from '@/components/roles/UserGroupFormModal';
 import { MemberManagementModal } from '@/components/roles/MemberManagementModal';
@@ -13,7 +13,7 @@ import { UserGroup, GroupMember } from '@/types/content';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 // Role Definitions
 interface RoleDefinition {
@@ -94,17 +94,17 @@ const permissionDefinitions: PermissionDef[] = [
   { id: 'notifications', name: 'Manage Notifications', description: 'Configure notification rules and templates' },
 ];
 
-// Module definitions
-const modules = [
-  'User Management',
-  'Content',
-  'Courses',
-  'Articles',
-  'Analytics',
-  'Settings',
+// Module definitions with icons
+const moduleConfig = [
+  { name: 'User Management', icon: UserCog, color: 'text-orange-500' },
+  { name: 'Content', icon: FolderOpen, color: 'text-blue-500' },
+  { name: 'Courses', icon: BookOpen, color: 'text-purple-500' },
+  { name: 'Articles', icon: FileText, color: 'text-green-500' },
+  { name: 'Analytics', icon: BarChart3, color: 'text-cyan-500' },
+  { name: 'Settings', icon: Settings, color: 'text-gray-500' },
 ];
 
-// Permission Matrix Data - true = allowed, false = denied
+// Permission Matrix Data
 type PermissionMatrix = {
   [module: string]: {
     [permission: string]: {
@@ -218,58 +218,6 @@ const permissionMatrix: PermissionMatrix = {
   },
 };
 
-// Legacy role interface for backward compatibility
-interface Role {
-  id: string;
-  name: string;
-  description: string;
-  userCount: number;
-  permissions: string[];
-  color: 'admin' | 'viewer' | 'editor' | 'moderator';
-}
-
-const roles: Role[] = [
-  {
-    id: '1',
-    name: 'Admin',
-    description: 'Full system access with all permissions enabled',
-    userCount: 24,
-    permissions: ['Create', 'Read', 'Update', 'Delete', 'Manage Users', 'System Settings'],
-    color: 'admin',
-  },
-  {
-    id: '2',
-    name: 'Moderator',
-    description: 'Content moderation and user management capabilities',
-    userCount: 18,
-    permissions: ['Read', 'Update', 'Moderate Content', 'Manage Reports'],
-    color: 'moderator',
-  },
-  {
-    id: '3',
-    name: 'Editor',
-    description: 'Create and edit content across the platform',
-    userCount: 45,
-    permissions: ['Create', 'Read', 'Update'],
-    color: 'editor',
-  },
-  {
-    id: '4',
-    name: 'Viewer',
-    description: 'Read-only access to content and dashboards',
-    userCount: 89,
-    permissions: ['Read'],
-    color: 'viewer',
-  },
-];
-
-const colorClasses = {
-  admin: 'bg-role-admin/15 text-role-admin border-role-admin/30',
-  viewer: 'bg-role-viewer/15 text-role-viewer border-role-viewer/30',
-  editor: 'bg-role-editor/15 text-role-editor border-role-editor/30',
-  moderator: 'bg-role-moderator/15 text-role-moderator border-role-moderator/30',
-};
-
 // Permission Cell Component
 const PermissionCell = ({ allowed }: { allowed: boolean }) => (
   <div className="flex justify-center">
@@ -285,13 +233,147 @@ const PermissionCell = ({ allowed }: { allowed: boolean }) => (
   </div>
 );
 
+// Module Permission Card Component
+const ModulePermissionCard = ({ 
+  module, 
+  icon: Icon, 
+  color,
+  isOpen,
+  onToggle 
+}: { 
+  module: string; 
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}) => {
+  const modulePermissions = permissionMatrix[module] || {};
+  const allowedCount = permissionDefinitions.reduce((acc, perm) => {
+    return acc + roleDefinitions.filter(role => modulePermissions[perm.id]?.[role.id]).length;
+  }, 0);
+  const totalCount = permissionDefinitions.length * roleDefinitions.length;
+  const percentage = Math.round((allowedCount / totalCount) * 100);
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={onToggle}>
+      <Card className="overflow-hidden">
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg bg-muted ${color}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">{module}</CardTitle>
+                  <CardDescription className="text-xs mt-0.5">
+                    {allowedCount} of {totalCount} permissions enabled ({percentage}%)
+                  </CardDescription>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-1">
+                  {roleDefinitions.slice(0, 3).map(role => {
+                    const roleAllowed = permissionDefinitions.filter(
+                      perm => modulePermissions[perm.id]?.[role.id]
+                    ).length;
+                    return (
+                      <Badge 
+                        key={role.id} 
+                        variant="outline" 
+                        className={`text-xs ${role.color}`}
+                      >
+                        {role.name.split(' ')[0]}: {roleAllowed}
+                      </Badge>
+                    );
+                  })}
+                </div>
+                {isOpen ? (
+                  <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                )}
+              </div>
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0 pb-4">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="w-[180px]">Permission</TableHead>
+                    {roleDefinitions.map((role) => (
+                      <TableHead key={role.id} className="text-center w-[90px]">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help text-xs font-medium">
+                              {role.name.split(' ')[0]}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[200px]">
+                            <p className="font-semibold">{role.name}</p>
+                            <p className="text-xs mt-1">{role.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {permissionDefinitions.map((perm) => (
+                    <TableRow key={perm.id} className="hover:bg-muted/20">
+                      <TableCell className="text-sm py-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help">{perm.name}</span>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <p className="text-xs">{perm.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      {roleDefinitions.map((role) => (
+                        <TableCell key={role.id} className="text-center p-2">
+                          <PermissionCell 
+                            allowed={modulePermissions[perm.id]?.[role.id] ?? false} 
+                          />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+};
+
 export default function RolesPage() {
   const [userGroups, setUserGroups] = useState<UserGroup[]>(mockUserGroups);
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<UserGroup | null>(null);
   const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [managingGroup, setManagingGroup] = useState<UserGroup | null>(null);
-  const [selectedModule, setSelectedModule] = useState<string>('all');
+  const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
+
+  const handleToggleModule = (moduleName: string) => {
+    setOpenModules(prev => ({ ...prev, [moduleName]: !prev[moduleName] }));
+  };
+
+  const handleExpandAll = () => {
+    const allOpen: Record<string, boolean> = {};
+    moduleConfig.forEach(m => { allOpen[m.name] = true; });
+    setOpenModules(allOpen);
+  };
+
+  const handleCollapseAll = () => {
+    setOpenModules({});
+  };
 
   const handleCreateGroup = () => {
     setEditingGroup(null);
@@ -393,7 +475,7 @@ export default function RolesPage() {
     const headers = ['Module', 'Permission', ...roleDefinitions.map(r => r.name)];
     const rows: string[][] = [];
     
-    modules.forEach(module => {
+    moduleConfig.forEach(({ name: module }) => {
       permissionDefinitions.forEach(perm => {
         const row = [
           module,
@@ -420,8 +502,6 @@ export default function RolesPage() {
   const currentManagingGroup = managingGroup
     ? userGroups.find((g) => g.id === managingGroup.id) || managingGroup
     : null;
-
-  const filteredModules = selectedModule === 'all' ? modules : [selectedModule];
 
   return (
     <DashboardLayout>
@@ -536,17 +616,14 @@ export default function RolesPage() {
             {/* Controls */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Filter by module:</span>
-                <select
-                  value={selectedModule}
-                  onChange={(e) => setSelectedModule(e.target.value)}
-                  className="px-3 py-1.5 text-sm border rounded-lg bg-background"
-                >
-                  <option value="all">All Modules</option>
-                  {modules.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
+                <Button variant="outline" size="sm" onClick={handleExpandAll}>
+                  <ChevronDown className="w-4 h-4 mr-1" />
+                  Expand All
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCollapseAll}>
+                  <ChevronUp className="w-4 h-4 mr-1" />
+                  Collapse All
+                </Button>
               </div>
               <Button variant="outline" size="sm" onClick={handleExportMatrix}>
                 <Download className="w-4 h-4 mr-2" />
@@ -570,110 +647,52 @@ export default function RolesPage() {
               </div>
             </div>
 
-            {/* Matrix Table */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Eye className="w-5 h-5" />
-                  Complete Permission Matrix
-                </CardTitle>
-                <CardDescription>
-                  Detailed view of all permissions across modules and roles
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="w-full">
-                  <div className="min-w-[900px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead className="w-[140px] sticky left-0 bg-muted/50 z-10">Module</TableHead>
-                          <TableHead className="w-[160px]">Permission</TableHead>
-                          {roleDefinitions.map((role) => (
-                            <TableHead key={role.id} className="text-center w-[100px]">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="cursor-help font-medium text-xs">
-                                    {role.name}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-[200px]">
-                                  <p className="text-xs">{role.description}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TableHead>
-                          ))}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredModules.map((module, moduleIndex) => (
-                          permissionDefinitions.map((perm, permIndex) => (
-                            <TableRow 
-                              key={`${module}-${perm.id}`}
-                              className={moduleIndex % 2 === 0 ? 'bg-background' : 'bg-muted/30'}
-                            >
-                              {permIndex === 0 && (
-                                <TableCell 
-                                  rowSpan={permissionDefinitions.length}
-                                  className="font-medium text-sm border-r sticky left-0 bg-inherit z-10"
-                                >
-                                  {module}
-                                </TableCell>
-                              )}
-                              <TableCell className="text-sm">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className="cursor-help">{perm.name}</span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right">
-                                    <p className="text-xs">{perm.description}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TableCell>
-                              {roleDefinitions.map((role) => (
-                                <TableCell key={role.id} className="text-center p-2">
-                                  <PermissionCell 
-                                    allowed={permissionMatrix[module]?.[perm.id]?.[role.id] ?? false} 
-                                  />
-                                </TableCell>
-                              ))}
-                            </TableRow>
-                          ))
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            {/* Module Cards */}
+            <div className="space-y-3">
+              {moduleConfig.map(({ name, icon, color }) => (
+                <ModulePermissionCard
+                  key={name}
+                  module={name}
+                  icon={icon}
+                  color={color}
+                  isOpen={openModules[name] || false}
+                  onToggle={() => handleToggleModule(name)}
+                />
+              ))}
+            </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {roleDefinitions.map((role) => {
-                const totalPermissions = modules.reduce((acc, module) => {
-                  return acc + permissionDefinitions.filter(
-                    perm => permissionMatrix[module]?.[perm.id]?.[role.id]
-                  ).length;
-                }, 0);
-                const maxPermissions = modules.length * permissionDefinitions.length;
-                const percentage = Math.round((totalPermissions / maxPermissions) * 100);
-                
-                return (
-                  <Card key={role.id} className="text-center">
-                    <CardContent className="p-4">
-                      <div className={`inline-flex p-2 rounded-lg ${role.color} mb-2`}>
-                        <Shield className="w-4 h-4" />
+            <Card className="mt-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Role Permission Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {roleDefinitions.map((role) => {
+                    const totalPermissions = moduleConfig.reduce((acc, { name: module }) => {
+                      return acc + permissionDefinitions.filter(
+                        perm => permissionMatrix[module]?.[perm.id]?.[role.id]
+                      ).length;
+                    }, 0);
+                    const maxPermissions = moduleConfig.length * permissionDefinitions.length;
+                    const percentage = Math.round((totalPermissions / maxPermissions) * 100);
+                    
+                    return (
+                      <div key={role.id} className="text-center p-3 rounded-lg bg-muted/30">
+                        <div className={`inline-flex p-2 rounded-lg ${role.color} mb-2`}>
+                          <Shield className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-medium text-sm">{role.name}</h4>
+                        <p className="text-xl font-bold text-foreground mt-1">{percentage}%</p>
+                        <p className="text-xs text-muted-foreground">
+                          {totalPermissions}/{maxPermissions}
+                        </p>
                       </div>
-                      <h4 className="font-medium text-sm">{role.name}</h4>
-                      <p className="text-2xl font-bold text-foreground mt-1">{percentage}%</p>
-                      <p className="text-xs text-muted-foreground">
-                        {totalPermissions}/{maxPermissions} permissions
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
