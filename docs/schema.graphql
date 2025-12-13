@@ -1,0 +1,1403 @@
+# ============================================
+# GeekGully Platform - GraphQL Schema
+# Version: 1.0.0
+# Description: Complete GraphQL API specification
+# ============================================
+
+# ============================================
+# SCALARS
+# ============================================
+
+scalar DateTime
+scalar JSON
+scalar Upload
+
+# ============================================
+# ENUMS
+# ============================================
+
+enum UserStatus {
+  ACTIVE
+  DEACTIVATED
+  INVITED
+  PENDING
+}
+
+enum RoleType {
+  MASTER
+  ADMIN
+  MANAGER
+  VIEWER
+  CUSTOM
+}
+
+enum WorkflowStatus {
+  DRAFT
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  REJECTED
+}
+
+enum ContentType {
+  COURSE
+  ARTICLE
+}
+
+enum NotificationType {
+  REVIEW_REQUEST
+  APPROVAL
+  REJECTION
+  COMMENT
+  MENTION
+  ASSIGNMENT
+  SYSTEM
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LessonType {
+  VIDEO
+  TEXT
+  QUIZ
+  ASSIGNMENT
+}
+
+enum CommentStatus {
+  ACTIVE
+  DELETED
+  FLAGGED
+}
+
+enum PermissionAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  PUBLISH
+  APPROVE
+  ASSIGN
+  MANAGE
+}
+
+enum ModuleType {
+  USER_MANAGEMENT
+  CONTENT
+  COURSES
+  ARTICLES
+  ANALYTICS
+  SETTINGS
+}
+
+# ============================================
+# INPUT TYPES - Authentication
+# ============================================
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input SignupInput {
+  email: String!
+  password: String!
+  firstName: String!
+  lastName: String!
+}
+
+input SocialLoginInput {
+  provider: String!
+  token: String!
+}
+
+input ResetPasswordInput {
+  token: String!
+  newPassword: String!
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+}
+
+# ============================================
+# INPUT TYPES - Users
+# ============================================
+
+input CreateUserInput {
+  email: String!
+  firstName: String!
+  lastName: String!
+  roleId: ID!
+  userGroupIds: [ID!]
+}
+
+input UpdateUserInput {
+  firstName: String
+  lastName: String
+  avatar: String
+  roleId: ID
+  status: UserStatus
+}
+
+input InviteUserInput {
+  email: String!
+  roleId: ID!
+  userGroupIds: [ID!]
+  message: String
+}
+
+input UserFilterInput {
+  status: UserStatus
+  roleId: ID
+  userGroupId: ID
+  search: String
+}
+
+input UserSortInput {
+  field: String!
+  order: SortOrder!
+}
+
+input PaginationInput {
+  page: Int = 1
+  limit: Int = 20
+}
+
+# ============================================
+# INPUT TYPES - Roles & Permissions
+# ============================================
+
+input CreateRoleInput {
+  name: String!
+  description: String
+  permissions: [PermissionInput!]!
+  isCustom: Boolean = true
+}
+
+input UpdateRoleInput {
+  name: String
+  description: String
+  permissions: [PermissionInput!]
+}
+
+input PermissionInput {
+  module: ModuleType!
+  actions: [PermissionAction!]!
+}
+
+input CreateUserGroupInput {
+  name: String!
+  description: String
+  roleId: ID!
+  categoryIds: [ID!]
+}
+
+input UpdateUserGroupInput {
+  name: String
+  description: String
+  roleId: ID
+  categoryIds: [ID!]
+}
+
+input ManageGroupMembersInput {
+  userGroupId: ID!
+  userIds: [ID!]!
+}
+
+# ============================================
+# INPUT TYPES - Categories
+# ============================================
+
+input CreateCategoryInput {
+  name: String!
+  slug: String!
+  description: String
+  parentId: ID
+  icon: String
+  order: Int
+}
+
+input UpdateCategoryInput {
+  name: String
+  slug: String
+  description: String
+  parentId: ID
+  icon: String
+  order: Int
+}
+
+input CategoryFilterInput {
+  parentId: ID
+  search: String
+}
+
+# ============================================
+# INPUT TYPES - Courses
+# ============================================
+
+input CreateCourseInput {
+  title: String!
+  slug: String!
+  description: String
+  shortDescription: String
+  thumbnail: String
+  categoryId: ID!
+  level: CourseLevel
+  duration: Int
+  tags: [String!]
+  instructorId: ID
+}
+
+input UpdateCourseInput {
+  title: String
+  slug: String
+  description: String
+  shortDescription: String
+  thumbnail: String
+  categoryId: ID
+  level: CourseLevel
+  duration: Int
+  tags: [String!]
+  instructorId: ID
+}
+
+input CreateSectionInput {
+  courseId: ID!
+  title: String!
+  description: String
+  order: Int
+}
+
+input UpdateSectionInput {
+  title: String
+  description: String
+  order: Int
+}
+
+input CreateLessonInput {
+  sectionId: ID!
+  title: String!
+  type: LessonType!
+  content: String
+  videoUrl: String
+  duration: Int
+  order: Int
+  isFree: Boolean
+}
+
+input UpdateLessonInput {
+  title: String
+  type: LessonType
+  content: String
+  videoUrl: String
+  duration: Int
+  order: Int
+  isFree: Boolean
+}
+
+input CourseFilterInput {
+  categoryId: ID
+  status: WorkflowStatus
+  level: CourseLevel
+  instructorId: ID
+  search: String
+  tags: [String!]
+}
+
+input CourseSortInput {
+  field: String!
+  order: SortOrder!
+}
+
+input ReorderItemsInput {
+  items: [ReorderItemInput!]!
+}
+
+input ReorderItemInput {
+  id: ID!
+  order: Int!
+}
+
+# ============================================
+# INPUT TYPES - Articles
+# ============================================
+
+input CreateArticleInput {
+  title: String!
+  slug: String!
+  content: String
+  excerpt: String
+  thumbnail: String
+  categoryId: ID!
+  tags: [String!]
+  seoTitle: String
+  seoDescription: String
+  seoKeywords: [String!]
+  canonicalUrl: String
+}
+
+input UpdateArticleInput {
+  title: String
+  slug: String
+  content: String
+  excerpt: String
+  thumbnail: String
+  categoryId: ID
+  tags: [String!]
+  seoTitle: String
+  seoDescription: String
+  seoKeywords: [String!]
+  canonicalUrl: String
+}
+
+input SchedulePublishInput {
+  contentId: ID!
+  contentType: ContentType!
+  publishAt: DateTime!
+  timezone: String
+}
+
+input ArticleFilterInput {
+  categoryId: ID
+  status: WorkflowStatus
+  authorId: ID
+  search: String
+  tags: [String!]
+}
+
+input AttachmentInput {
+  name: String!
+  url: String!
+  type: String!
+  size: Int!
+}
+
+# ============================================
+# INPUT TYPES - Workflow
+# ============================================
+
+input SubmitForReviewInput {
+  contentId: ID!
+  contentType: ContentType!
+  message: String
+  reviewerIds: [ID!]
+}
+
+input ReviewActionInput {
+  contentId: ID!
+  contentType: ContentType!
+  action: ReviewAction!
+  comment: String
+}
+
+enum ReviewAction {
+  APPROVE
+  REJECT
+  REQUEST_CHANGES
+}
+
+input AddReviewCommentInput {
+  contentId: ID!
+  contentType: ContentType!
+  comment: String!
+  parentId: ID
+}
+
+# ============================================
+# INPUT TYPES - Enrollment & Progress
+# ============================================
+
+input EnrollCourseInput {
+  courseId: ID!
+}
+
+input UpdateProgressInput {
+  lessonId: ID!
+  completed: Boolean!
+  progressPercent: Int
+  timeSpent: Int
+}
+
+input BookmarkInput {
+  contentId: ID!
+  contentType: ContentType!
+}
+
+# ============================================
+# INPUT TYPES - Comments
+# ============================================
+
+input CreateCommentInput {
+  contentId: ID!
+  contentType: ContentType!
+  content: String!
+  parentId: ID
+}
+
+input UpdateCommentInput {
+  content: String!
+}
+
+# ============================================
+# INPUT TYPES - Tasks & Notifications
+# ============================================
+
+input TaskFilterInput {
+  contentType: ContentType
+  status: WorkflowStatus
+  ownershipType: OwnershipType
+  categoryId: ID
+}
+
+enum OwnershipType {
+  OWNED
+  REVIEWING
+  CONTRIBUTED
+  ALL
+}
+
+input NotificationFilterInput {
+  type: NotificationType
+  isRead: Boolean
+}
+
+# ============================================
+# INPUT TYPES - Analytics
+# ============================================
+
+input AnalyticsFilterInput {
+  startDate: DateTime!
+  endDate: DateTime!
+  categoryId: ID
+  courseId: ID
+}
+
+# ============================================
+# INPUT TYPES - Search
+# ============================================
+
+input SearchInput {
+  query: String!
+  contentTypes: [ContentType!]
+  categoryIds: [ID!]
+  tags: [String!]
+  limit: Int = 20
+  offset: Int = 0
+}
+
+# ============================================
+# TYPES - Authentication
+# ============================================
+
+type AuthPayload {
+  token: String!
+  refreshToken: String!
+  user: User!
+  expiresAt: DateTime!
+}
+
+type TokenPayload {
+  token: String!
+  refreshToken: String!
+  expiresAt: DateTime!
+}
+
+# ============================================
+# TYPES - Users
+# ============================================
+
+type User {
+  id: ID!
+  email: String!
+  firstName: String!
+  lastName: String!
+  fullName: String!
+  avatar: String
+  status: UserStatus!
+  role: Role!
+  userGroups: [UserGroup!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  lastLoginAt: DateTime
+  invitedBy: User
+  
+  # Computed fields
+  coursesCreated: [Course!]!
+  articlesCreated: [Article!]!
+  enrollments: [Enrollment!]!
+  tasksCount: Int!
+}
+
+type UserConnection {
+  edges: [UserEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type UserEdge {
+  node: User!
+  cursor: String!
+}
+
+type UserStats {
+  total: Int!
+  active: Int!
+  deactivated: Int!
+  invited: Int!
+  byRole: [RoleCount!]!
+  recentUsers: [User!]!
+}
+
+type RoleCount {
+  role: Role!
+  count: Int!
+}
+
+# ============================================
+# TYPES - Roles & Permissions
+# ============================================
+
+type Role {
+  id: ID!
+  name: String!
+  description: String
+  type: RoleType!
+  isCustom: Boolean!
+  permissions: [Permission!]!
+  users: [User!]!
+  userGroups: [UserGroup!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Permission {
+  id: ID!
+  module: ModuleType!
+  actions: [PermissionAction!]!
+}
+
+type UserGroup {
+  id: ID!
+  name: String!
+  description: String
+  role: Role!
+  categories: [Category!]!
+  members: [User!]!
+  memberCount: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type UserGroupConnection {
+  edges: [UserGroupEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type UserGroupEdge {
+  node: UserGroup!
+  cursor: String!
+}
+
+# ============================================
+# TYPES - Categories
+# ============================================
+
+type Category {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  icon: String
+  order: Int!
+  parent: Category
+  children: [Category!]!
+  path: [Category!]!
+  depth: Int!
+  userGroups: [UserGroup!]!
+  courses: [Course!]!
+  articles: [Article!]!
+  coursesCount: Int!
+  articlesCount: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type CategoryTree {
+  categories: [Category!]!
+  totalCount: Int!
+}
+
+# ============================================
+# TYPES - Courses
+# ============================================
+
+type Course {
+  id: ID!
+  title: String!
+  slug: String!
+  description: String
+  shortDescription: String
+  thumbnail: String
+  category: Category!
+  level: CourseLevel
+  duration: Int
+  tags: [String!]!
+  status: WorkflowStatus!
+  instructor: User
+  author: User!
+  sections: [Section!]!
+  sectionsCount: Int!
+  lessonsCount: Int!
+  enrollmentsCount: Int!
+  averageRating: Float
+  reviewsCount: Int!
+  versions: [ContentVersion!]!
+  currentVersion: Int!
+  workflowHistory: [WorkflowEvent!]!
+  reviewComments: [ReviewComment!]!
+  publishedAt: DateTime
+  scheduledPublishAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # User-specific fields
+  isEnrolled: Boolean!
+  userProgress: CourseProgress
+  isBookmarked: Boolean!
+}
+
+type Section {
+  id: ID!
+  course: Course!
+  title: String!
+  description: String
+  order: Int!
+  lessons: [Lesson!]!
+  lessonsCount: Int!
+  duration: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Lesson {
+  id: ID!
+  section: Section!
+  title: String!
+  type: LessonType!
+  content: String
+  videoUrl: String
+  duration: Int
+  order: Int!
+  isFree: Boolean!
+  attachments: [Attachment!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # User-specific fields
+  isCompleted: Boolean!
+  userProgress: LessonProgress
+}
+
+type CourseConnection {
+  edges: [CourseEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type CourseEdge {
+  node: Course!
+  cursor: String!
+}
+
+# ============================================
+# TYPES - Articles
+# ============================================
+
+type Article {
+  id: ID!
+  title: String!
+  slug: String!
+  content: String
+  excerpt: String
+  thumbnail: String
+  category: Category!
+  tags: [String!]!
+  status: WorkflowStatus!
+  author: User!
+  readingTime: Int
+  viewsCount: Int!
+  likesCount: Int!
+  commentsCount: Int!
+  
+  # SEO fields
+  seoTitle: String
+  seoDescription: String
+  seoKeywords: [String!]
+  canonicalUrl: String
+  
+  # Attachments & versions
+  attachments: [Attachment!]!
+  versions: [ContentVersion!]!
+  currentVersion: Int!
+  
+  # Workflow
+  workflowHistory: [WorkflowEvent!]!
+  reviewComments: [ReviewComment!]!
+  publishedAt: DateTime
+  scheduledPublishAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # User-specific fields
+  isBookmarked: Boolean!
+  isLiked: Boolean!
+  
+  # Related content
+  relatedArticles: [Article!]!
+}
+
+type ArticleConnection {
+  edges: [ArticleEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ArticleEdge {
+  node: Article!
+  cursor: String!
+}
+
+type Attachment {
+  id: ID!
+  name: String!
+  url: String!
+  type: String!
+  size: Int!
+  createdAt: DateTime!
+}
+
+# ============================================
+# TYPES - Workflow
+# ============================================
+
+type ContentVersion {
+  id: ID!
+  version: Int!
+  contentSnapshot: JSON!
+  createdBy: User!
+  createdAt: DateTime!
+  changeDescription: String
+}
+
+type WorkflowEvent {
+  id: ID!
+  fromStatus: WorkflowStatus
+  toStatus: WorkflowStatus!
+  action: String!
+  performedBy: User!
+  comment: String
+  createdAt: DateTime!
+}
+
+type ReviewComment {
+  id: ID!
+  content: String!
+  author: User!
+  parent: ReviewComment
+  replies: [ReviewComment!]!
+  isResolved: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type ScheduledPublish {
+  id: ID!
+  contentId: ID!
+  contentType: ContentType!
+  publishAt: DateTime!
+  timezone: String
+  status: ScheduleStatus!
+  createdBy: User!
+  createdAt: DateTime!
+}
+
+enum ScheduleStatus {
+  PENDING
+  PUBLISHED
+  CANCELLED
+  FAILED
+}
+
+# ============================================
+# TYPES - Enrollment & Progress
+# ============================================
+
+type Enrollment {
+  id: ID!
+  user: User!
+  course: Course!
+  enrolledAt: DateTime!
+  completedAt: DateTime
+  progress: CourseProgress!
+  certificate: Certificate
+}
+
+type CourseProgress {
+  totalLessons: Int!
+  completedLessons: Int!
+  progressPercent: Float!
+  lastAccessedLesson: Lesson
+  lastAccessedAt: DateTime
+  totalTimeSpent: Int!
+  lessonProgresses: [LessonProgress!]!
+}
+
+type LessonProgress {
+  lesson: Lesson!
+  completed: Boolean!
+  progressPercent: Float!
+  timeSpent: Int!
+  completedAt: DateTime
+  lastAccessedAt: DateTime
+}
+
+type Certificate {
+  id: ID!
+  enrollment: Enrollment!
+  issueDate: DateTime!
+  certificateUrl: String!
+  certificateNumber: String!
+}
+
+type Bookmark {
+  id: ID!
+  user: User!
+  contentId: ID!
+  contentType: ContentType!
+  content: BookmarkContent!
+  createdAt: DateTime!
+}
+
+union BookmarkContent = Course | Article
+
+# ============================================
+# TYPES - Comments
+# ============================================
+
+type Comment {
+  id: ID!
+  content: String!
+  author: User!
+  contentId: ID!
+  contentType: ContentType!
+  parent: Comment
+  replies: [Comment!]!
+  repliesCount: Int!
+  likesCount: Int!
+  status: CommentStatus!
+  isLiked: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type CommentConnection {
+  edges: [CommentEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type CommentEdge {
+  node: Comment!
+  cursor: String!
+}
+
+# ============================================
+# TYPES - Tasks & Notifications
+# ============================================
+
+type Task {
+  id: ID!
+  content: TaskContent!
+  contentType: ContentType!
+  status: WorkflowStatus!
+  ownershipType: OwnershipType!
+  category: Category!
+  author: User!
+  assignedReviewers: [User!]!
+  dueDate: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+union TaskContent = Course | Article
+
+type TaskConnection {
+  edges: [TaskEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+  stats: TaskStats!
+}
+
+type TaskEdge {
+  node: Task!
+  cursor: String!
+}
+
+type TaskStats {
+  pendingReview: Int!
+  myContent: Int!
+  myDrafts: Int!
+  published: Int!
+  notifications: Int!
+}
+
+type Notification {
+  id: ID!
+  type: NotificationType!
+  title: String!
+  message: String!
+  isRead: Boolean!
+  relatedContentId: ID
+  relatedContentType: ContentType
+  actionUrl: String
+  sender: User
+  createdAt: DateTime!
+}
+
+type NotificationConnection {
+  edges: [NotificationEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+  unreadCount: Int!
+}
+
+type NotificationEdge {
+  node: Notification!
+  cursor: String!
+}
+
+# ============================================
+# TYPES - Analytics
+# ============================================
+
+type DashboardAnalytics {
+  overview: AnalyticsOverview!
+  userGrowth: [TimeSeriesData!]!
+  contentStats: ContentAnalytics!
+  topCourses: [CourseAnalytics!]!
+  topArticles: [ArticleAnalytics!]!
+  enrollmentTrends: [TimeSeriesData!]!
+  categoryDistribution: [CategoryAnalytics!]!
+}
+
+type AnalyticsOverview {
+  totalUsers: Int!
+  activeUsers: Int!
+  totalCourses: Int!
+  publishedCourses: Int!
+  totalArticles: Int!
+  publishedArticles: Int!
+  totalEnrollments: Int!
+  completionRate: Float!
+}
+
+type ContentAnalytics {
+  coursesPublished: Int!
+  articlesPublished: Int!
+  pendingReview: Int!
+  drafts: Int!
+  publishedThisMonth: Int!
+  publishedLastMonth: Int!
+  growthPercent: Float!
+}
+
+type CourseAnalytics {
+  course: Course!
+  enrollments: Int!
+  completions: Int!
+  completionRate: Float!
+  averageRating: Float!
+  revenue: Float
+}
+
+type ArticleAnalytics {
+  article: Article!
+  views: Int!
+  uniqueViews: Int!
+  likes: Int!
+  comments: Int!
+  shares: Int!
+  averageReadTime: Float!
+}
+
+type CategoryAnalytics {
+  category: Category!
+  coursesCount: Int!
+  articlesCount: Int!
+  enrollmentsCount: Int!
+}
+
+type TimeSeriesData {
+  date: DateTime!
+  value: Float!
+  label: String
+}
+
+type UserAnalytics {
+  user: User!
+  coursesEnrolled: Int!
+  coursesCompleted: Int!
+  articlesRead: Int!
+  totalTimeSpent: Int!
+  lastActiveAt: DateTime
+  streakDays: Int!
+}
+
+# ============================================
+# TYPES - Search
+# ============================================
+
+type SearchResult {
+  courses: CourseConnection!
+  articles: ArticleConnection!
+  totalCount: Int!
+  query: String!
+  suggestions: [String!]!
+}
+
+type SearchSuggestion {
+  text: String!
+  type: ContentType!
+  count: Int!
+}
+
+# ============================================
+# TYPES - Public Content
+# ============================================
+
+type LearningPath {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  icon: String
+  courses: [Course!]!
+  coursesCount: Int!
+  estimatedDuration: Int!
+  order: Int!
+}
+
+type FeaturedContent {
+  featuredCourses: [Course!]!
+  featuredArticles: [Article!]!
+  popularCourses: [Course!]!
+  recentArticles: [Article!]!
+  learningPaths: [LearningPath!]!
+}
+
+type TechnologyPage {
+  category: Category!
+  courses: CourseConnection!
+  articles: ArticleConnection!
+  relatedCategories: [Category!]!
+}
+
+# ============================================
+# TYPES - Common
+# ============================================
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+  totalPages: Int!
+  currentPage: Int!
+}
+
+type SuccessResponse {
+  success: Boolean!
+  message: String
+}
+
+type BatchOperationResult {
+  successCount: Int!
+  failedCount: Int!
+  errors: [BatchError!]!
+}
+
+type BatchError {
+  id: ID!
+  message: String!
+}
+
+# ============================================
+# QUERIES
+# ============================================
+
+type Query {
+  # ============ Authentication ============
+  me: User!
+  
+  # ============ Users ============
+  user(id: ID!): User
+  users(
+    filter: UserFilterInput
+    sort: UserSortInput
+    pagination: PaginationInput
+  ): UserConnection!
+  userStats: UserStats!
+  
+  # ============ Roles & Permissions ============
+  role(id: ID!): Role
+  roles: [Role!]!
+  defaultRoles: [Role!]!
+  customRoles: [Role!]!
+  permissionMatrix: [Permission!]!
+  
+  userGroup(id: ID!): UserGroup
+  userGroups(pagination: PaginationInput): UserGroupConnection!
+  userGroupsByRole(roleId: ID!): [UserGroup!]!
+  
+  # ============ Categories ============
+  category(id: ID, slug: String): Category
+  categories(filter: CategoryFilterInput): [Category!]!
+  categoryTree: CategoryTree!
+  categoryPath(id: ID!): [Category!]!
+  
+  # ============ Courses ============
+  course(id: ID, slug: String): Course
+  courses(
+    filter: CourseFilterInput
+    sort: CourseSortInput
+    pagination: PaginationInput
+  ): CourseConnection!
+  
+  section(id: ID!): Section
+  lesson(id: ID!): Lesson
+  
+  courseVersions(courseId: ID!): [ContentVersion!]!
+  courseVersion(courseId: ID!, version: Int!): ContentVersion
+  
+  # ============ Articles ============
+  article(id: ID, slug: String): Article
+  articles(
+    filter: ArticleFilterInput
+    pagination: PaginationInput
+  ): ArticleConnection!
+  
+  articleVersions(articleId: ID!): [ContentVersion!]!
+  articleVersion(articleId: ID!, version: Int!): ContentVersion
+  
+  relatedArticles(articleId: ID!, limit: Int = 5): [Article!]!
+  
+  # ============ Workflow ============
+  workflowHistory(contentId: ID!, contentType: ContentType!): [WorkflowEvent!]!
+  reviewComments(contentId: ID!, contentType: ContentType!): [ReviewComment!]!
+  scheduledPublishes: [ScheduledPublish!]!
+  
+  # ============ Enrollment & Progress ============
+  myEnrollments: [Enrollment!]!
+  enrollment(courseId: ID!): Enrollment
+  courseProgress(courseId: ID!): CourseProgress
+  myBookmarks(contentType: ContentType): [Bookmark!]!
+  myCertificates: [Certificate!]!
+  
+  # ============ Comments ============
+  comments(
+    contentId: ID!
+    contentType: ContentType!
+    pagination: PaginationInput
+  ): CommentConnection!
+  
+  # ============ Tasks & Notifications ============
+  myTasks(filter: TaskFilterInput, pagination: PaginationInput): TaskConnection!
+  taskStats: TaskStats!
+  
+  notifications(filter: NotificationFilterInput, pagination: PaginationInput): NotificationConnection!
+  unreadNotificationsCount: Int!
+  
+  # ============ Analytics ============
+  dashboardAnalytics(filter: AnalyticsFilterInput): DashboardAnalytics!
+  courseAnalytics(courseId: ID!, filter: AnalyticsFilterInput): CourseAnalytics!
+  articleAnalytics(articleId: ID!, filter: AnalyticsFilterInput): ArticleAnalytics!
+  userAnalytics(userId: ID!): UserAnalytics!
+  
+  # ============ Search ============
+  search(input: SearchInput!): SearchResult!
+  searchSuggestions(query: String!): [SearchSuggestion!]!
+  
+  # ============ Public Content ============
+  featuredContent: FeaturedContent!
+  learningPaths: [LearningPath!]!
+  learningPath(slug: String!): LearningPath
+  technologyPage(slug: String!): TechnologyPage
+  publicCourses(categorySlug: String, pagination: PaginationInput): CourseConnection!
+  publicArticles(categorySlug: String, pagination: PaginationInput): ArticleConnection!
+}
+
+# ============================================
+# MUTATIONS
+# ============================================
+
+type Mutation {
+  # ============ Authentication ============
+  login(input: LoginInput!): AuthPayload!
+  signup(input: SignupInput!): AuthPayload!
+  socialLogin(input: SocialLoginInput!): AuthPayload!
+  logout: SuccessResponse!
+  refreshToken(refreshToken: String!): TokenPayload!
+  forgotPassword(email: String!): SuccessResponse!
+  resetPassword(input: ResetPasswordInput!): SuccessResponse!
+  changePassword(input: ChangePasswordInput!): SuccessResponse!
+  verifyEmail(token: String!): SuccessResponse!
+  resendVerificationEmail: SuccessResponse!
+  
+  # ============ Users ============
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+  deleteUser(id: ID!): SuccessResponse!
+  deleteUsers(ids: [ID!]!): BatchOperationResult!
+  
+  inviteUser(input: InviteUserInput!): User!
+  resendInvitation(userId: ID!): SuccessResponse!
+  activateUser(id: ID!): User!
+  deactivateUser(id: ID!): User!
+  
+  updateProfile(input: UpdateUserInput!): User!
+  uploadAvatar(file: Upload!): User!
+  
+  # ============ Roles & Permissions ============
+  createRole(input: CreateRoleInput!): Role!
+  updateRole(id: ID!, input: UpdateRoleInput!): Role!
+  deleteRole(id: ID!): SuccessResponse!
+  duplicateRole(id: ID!, name: String!): Role!
+  
+  createUserGroup(input: CreateUserGroupInput!): UserGroup!
+  updateUserGroup(id: ID!, input: UpdateUserGroupInput!): UserGroup!
+  deleteUserGroup(id: ID!): SuccessResponse!
+  
+  addGroupMembers(input: ManageGroupMembersInput!): UserGroup!
+  removeGroupMembers(input: ManageGroupMembersInput!): UserGroup!
+  
+  assignUserGroupsToCategory(categoryId: ID!, userGroupIds: [ID!]!): Category!
+  
+  # ============ Categories ============
+  createCategory(input: CreateCategoryInput!): Category!
+  updateCategory(id: ID!, input: UpdateCategoryInput!): Category!
+  deleteCategory(id: ID!): SuccessResponse!
+  moveCategory(id: ID!, newParentId: ID): Category!
+  reorderCategories(input: ReorderItemsInput!): [Category!]!
+  
+  # ============ Courses ============
+  createCourse(input: CreateCourseInput!): Course!
+  updateCourse(id: ID!, input: UpdateCourseInput!): Course!
+  deleteCourse(id: ID!): SuccessResponse!
+  duplicateCourse(id: ID!, title: String!): Course!
+  
+  createSection(input: CreateSectionInput!): Section!
+  updateSection(id: ID!, input: UpdateSectionInput!): Section!
+  deleteSection(id: ID!): SuccessResponse!
+  reorderSections(courseId: ID!, input: ReorderItemsInput!): [Section!]!
+  
+  createLesson(input: CreateLessonInput!): Lesson!
+  updateLesson(id: ID!, input: UpdateLessonInput!): Lesson!
+  deleteLesson(id: ID!): SuccessResponse!
+  reorderLessons(sectionId: ID!, input: ReorderItemsInput!): [Lesson!]!
+  
+  addCourseAttachment(courseId: ID!, input: AttachmentInput!): Attachment!
+  removeCourseAttachment(courseId: ID!, attachmentId: ID!): SuccessResponse!
+  addLessonAttachment(lessonId: ID!, input: AttachmentInput!): Attachment!
+  removeLessonAttachment(lessonId: ID!, attachmentId: ID!): SuccessResponse!
+  
+  restoreCourseVersion(courseId: ID!, version: Int!): Course!
+  
+  # ============ Articles ============
+  createArticle(input: CreateArticleInput!): Article!
+  updateArticle(id: ID!, input: UpdateArticleInput!): Article!
+  deleteArticle(id: ID!): SuccessResponse!
+  duplicateArticle(id: ID!, title: String!): Article!
+  
+  addArticleAttachment(articleId: ID!, input: AttachmentInput!): Attachment!
+  removeArticleAttachment(articleId: ID!, attachmentId: ID!): SuccessResponse!
+  
+  restoreArticleVersion(articleId: ID!, version: Int!): Article!
+  
+  # ============ Workflow ============
+  submitForReview(input: SubmitForReviewInput!): SuccessResponse!
+  reviewContent(input: ReviewActionInput!): SuccessResponse!
+  publishContent(contentId: ID!, contentType: ContentType!): SuccessResponse!
+  unpublishContent(contentId: ID!, contentType: ContentType!): SuccessResponse!
+  
+  schedulePublish(input: SchedulePublishInput!): ScheduledPublish!
+  cancelScheduledPublish(id: ID!): SuccessResponse!
+  
+  addReviewComment(input: AddReviewCommentInput!): ReviewComment!
+  resolveReviewComment(id: ID!): ReviewComment!
+  deleteReviewComment(id: ID!): SuccessResponse!
+  
+  # ============ Enrollment & Progress ============
+  enrollCourse(input: EnrollCourseInput!): Enrollment!
+  unenrollCourse(courseId: ID!): SuccessResponse!
+  
+  updateLessonProgress(input: UpdateProgressInput!): LessonProgress!
+  markLessonComplete(lessonId: ID!): LessonProgress!
+  markLessonIncomplete(lessonId: ID!): LessonProgress!
+  resetCourseProgress(courseId: ID!): SuccessResponse!
+  
+  addBookmark(input: BookmarkInput!): Bookmark!
+  removeBookmark(contentId: ID!, contentType: ContentType!): SuccessResponse!
+  
+  generateCertificate(enrollmentId: ID!): Certificate!
+  
+  # ============ Comments ============
+  createComment(input: CreateCommentInput!): Comment!
+  updateComment(id: ID!, input: UpdateCommentInput!): Comment!
+  deleteComment(id: ID!): SuccessResponse!
+  likeComment(id: ID!): Comment!
+  unlikeComment(id: ID!): Comment!
+  reportComment(id: ID!, reason: String!): SuccessResponse!
+  
+  # ============ Notifications ============
+  markNotificationRead(id: ID!): Notification!
+  markAllNotificationsRead: SuccessResponse!
+  deleteNotification(id: ID!): SuccessResponse!
+  clearAllNotifications: SuccessResponse!
+  
+  # ============ File Upload ============
+  uploadFile(file: Upload!, folder: String): String!
+  deleteFile(url: String!): SuccessResponse!
+}
+
+# ============================================
+# SUBSCRIPTIONS
+# ============================================
+
+type Subscription {
+  # Real-time notifications
+  notificationReceived: Notification!
+  
+  # Course progress updates (for instructors)
+  courseProgressUpdated(courseId: ID!): CourseProgress!
+  
+  # Comment updates
+  commentAdded(contentId: ID!, contentType: ContentType!): Comment!
+  
+  # Workflow updates
+  workflowStatusChanged(contentId: ID!, contentType: ContentType!): WorkflowEvent!
+  
+  # Review comments (real-time collaboration)
+  reviewCommentAdded(contentId: ID!, contentType: ContentType!): ReviewComment!
+}
