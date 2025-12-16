@@ -403,16 +403,15 @@ export default function RolesPage() {
     setGroupModalOpen(false);
   };
 
-  const handleAddMember = async (groupId: string, email: string, role: GroupMember['role']) => {
-    // Find user by email from fetched users
-    const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+  const handleAddMember = async (groupId: string, userId: string) => {
+    const user = allUsers.find(u => u.id === userId);
     
     if (!user) {
-      toast.error('User not found with this email');
+      toast.error('User not found');
       return;
     }
     
-    const success = await addUserToGroup(user.id, groupId);
+    const success = await addUserToGroup(userId, groupId);
     if (success) {
       setUserGroups((prev) =>
         prev.map((g) => {
@@ -422,7 +421,7 @@ export default function RolesPage() {
               userId: user.id,
               userName: user.name,
               email: user.email,
-              role,
+              role: 'member',
               addedAt: new Date().toISOString(),
             };
             return { ...g, members: [...g.members, newMember] };
@@ -430,28 +429,26 @@ export default function RolesPage() {
           return g;
         })
       );
+      toast.success('Member added');
     } else {
       toast.error('Failed to add member');
     }
   };
 
-  const handleRemoveMember = async (groupId: string, memberId: string) => {
-    const group = userGroups.find(g => g.id === groupId);
-    const member = group?.members.find(m => m.id === memberId);
-    if (member) {
-      const success = await removeUserFromGroup(member.userId, groupId);
-      if (success) {
-        setUserGroups((prev) =>
-          prev.map((g) => {
-            if (g.id === groupId) {
-              return { ...g, members: g.members.filter((m) => m.id !== memberId) };
-            }
-            return g;
-          })
-        );
-      } else {
-        toast.error('Failed to remove member');
-      }
+  const handleRemoveMember = async (groupId: string, userId: string) => {
+    const success = await removeUserFromGroup(userId, groupId);
+    if (success) {
+      setUserGroups((prev) =>
+        prev.map((g) => {
+          if (g.id === groupId) {
+            return { ...g, members: g.members.filter((m) => m.userId !== userId) };
+          }
+          return g;
+        })
+      );
+      toast.success('Member removed');
+    } else {
+      toast.error('Failed to remove member');
     }
   };
 
@@ -918,9 +915,9 @@ export default function RolesPage() {
           open={memberModalOpen}
           onClose={() => setMemberModalOpen(false)}
           group={currentManagingGroup}
+          allUsers={allUsers}
           onAddMember={handleAddMember}
           onRemoveMember={handleRemoveMember}
-          onChangeRole={handleChangeRole}
         />
 
         <RoleFormModal
