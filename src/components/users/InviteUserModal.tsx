@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useAppDispatch } from '@/store/hooks';
-import { addUser } from '@/store/slices/userSlice';
-import { UserRole } from '@/types/user';
+import { useUsers } from '@/api/hooks/useUsers';
+import { UserStatus } from '@/api/types';
 import {
   Dialog,
   DialogContent,
@@ -20,65 +19,63 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 interface InviteUserModalProps {
   open: boolean;
   onClose: () => void;
+  onUserCreated?: () => void;
 }
 
-export function InviteUserModal({ open, onClose }: InviteUserModalProps) {
-  const dispatch = useAppDispatch();
+export function InviteUserModal({ open, onClose, onUserCreated }: InviteUserModalProps) {
+  const { createUser, isLoading } = useUsers();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [role, setRole] = useState<UserRole>('Viewer');
-  const [loading, setLoading] = useState(false);
+  const [password, setPassword] = useState('');
+  const [status, setStatus] = useState<UserStatus>('PENDING');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !firstName || !lastName) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fill in all required fields.',
-        variant: 'destructive',
-      });
+    if (!email || !name) {
+      toast.error('Please fill in all required fields.');
       return;
     }
 
-    setLoading(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    dispatch(
-      addUser({
-        id: `user-${Date.now()}`,
-        firstName,
-        lastName,
-        email,
-        role,
-        status: 'invited',
-        createdAt: new Date().toISOString(),
-      })
-    );
-
-    toast({
-      title: 'Invitation Sent',
-      description: `An invitation has been sent to ${email}.`,
+    const result = await createUser({
+      name,
+      email,
+      password: password || undefined,
+      status,
     });
 
-    setLoading(false);
+    if (result) {
+      toast.success(`User invitation sent to ${email}`);
+      resetForm();
+      onUserCreated?.();
+      onClose();
+    } else {
+      toast.error('Failed to create user. Please try again.');
+    }
+  };
+
+  const resetForm = () => {
+    setName('');
     setEmail('');
-    setFirstName('');
-    setLastName('');
-    setRole('Viewer');
-    onClose();
+    setPassword('');
+    setStatus('PENDING');
+  };
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      resetForm();
+      onClose();
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Invite User</DialogTitle>
@@ -88,47 +85,47 @@ export function InviteUserModal({ open, onClose }: InviteUserModalProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="John"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Doe"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name *</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                required
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Email Address *</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="john.doe@company.com"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+              <Label htmlFor="password">Initial Password (optional)</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Leave blank to send email invitation"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Initial Status</Label>
+              <Select value={status} onValueChange={(value) => setStatus(value as UserStatus)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Admin">Admin</SelectItem>
-                  <SelectItem value="Moderator">Moderator</SelectItem>
-                  <SelectItem value="Editor">Editor</SelectItem>
-                  <SelectItem value="Viewer">Viewer</SelectItem>
+                  <SelectItem value="PENDING">Invited (Pending)</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -137,8 +134,15 @@ export function InviteUserModal({ open, onClose }: InviteUserModalProps) {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Sending...' : 'Send Invitation'}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Send Invitation'
+              )}
             </Button>
           </DialogFooter>
         </form>

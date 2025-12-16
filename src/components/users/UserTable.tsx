@@ -1,10 +1,8 @@
-import { User } from '@/types/user';
+import { UserResponse, UserStatus } from '@/api/types';
 import { format } from 'date-fns';
 import { RoleBadge } from './RoleBadge';
 import { StatusToggle } from './StatusToggle';
-import { useAppDispatch } from '@/store/hooks';
-import { toggleUserStatus } from '@/store/slices/userSlice';
-import { ChevronDown, ChevronUp, History, Edit, MoreHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronUp, History, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,21 +16,35 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface UserTableProps {
-  users: User[];
-  sortBy: keyof User;
+  users: UserResponse[];
+  sortBy: string;
   sortOrder: 'asc' | 'desc';
-  onSort: (column: keyof User) => void;
+  onSort: (column: string) => void;
+  onToggleStatus: (userId: string, currentStatus: UserStatus) => void;
+  onDeleteUser: (userId: string) => void;
 }
 
 interface SortableHeaderProps {
   label: string;
-  column: keyof User;
-  currentSort: keyof User;
+  column: string;
+  currentSort: string;
   sortOrder: 'asc' | 'desc';
-  onSort: (column: keyof User) => void;
+  onSort: (column: string) => void;
 }
 
 function SortableHeader({ label, column, currentSort, sortOrder, onSort }: SortableHeaderProps) {
@@ -62,15 +74,20 @@ function SortableHeader({ label, column, currentSort, sortOrder, onSort }: Sorta
   );
 }
 
-export function UserTable({ users, sortBy, sortOrder, onSort }: UserTableProps) {
-  const dispatch = useAppDispatch();
+// Map API status to display
+const statusDisplayMap: Record<UserStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  ACTIVE: { label: 'Active', variant: 'default' },
+  INACTIVE: { label: 'Inactive', variant: 'secondary' },
+  PENDING: { label: 'Invited', variant: 'outline' },
+  DEACTIVATED: { label: 'Deactivated', variant: 'destructive' },
+};
 
-  const handleToggleStatus = (userId: string) => {
-    dispatch(toggleUserStatus(userId));
-  };
-
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, onDeleteUser }: UserTableProps) {
+  const getInitials = (name: string) => {
+    const parts = name.split(' ');
+    return parts.length > 1 
+      ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+      : name.substring(0, 2).toUpperCase();
   };
 
   if (users.length === 0) {
@@ -90,7 +107,7 @@ export function UserTable({ users, sortBy, sortOrder, onSort }: UserTableProps) 
             <th className="text-left py-3 px-4 text-sm font-medium">
               <SortableHeader
                 label="User"
-                column="firstName"
+                column="name"
                 currentSort={sortBy}
                 sortOrder={sortOrder}
                 onSort={onSort}
@@ -107,8 +124,8 @@ export function UserTable({ users, sortBy, sortOrder, onSort }: UserTableProps) 
             </th>
             <th className="text-left py-3 px-4 text-sm font-medium">
               <SortableHeader
-                label="Role"
-                column="role"
+                label="Status"
+                column="status"
                 currentSort={sortBy}
                 sortOrder={sortOrder}
                 onSort={onSort}
@@ -124,7 +141,7 @@ export function UserTable({ users, sortBy, sortOrder, onSort }: UserTableProps) 
               />
             </th>
             <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-              Status
+              Last Login
             </th>
             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
               Actions
@@ -145,28 +162,28 @@ export function UserTable({ users, sortBy, sortOrder, onSort }: UserTableProps) 
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                      {getInitials(user.firstName, user.lastName)}
+                      {getInitials(user.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-medium">
-                    {user.firstName} {user.lastName}
-                  </span>
+                  <span className="font-medium">{user.name}</span>
                 </div>
               </td>
               <td className="py-3 px-4 text-muted-foreground">
                 {user.email}
               </td>
               <td className="py-3 px-4">
-                <RoleBadge role={user.role} />
+                <Badge variant={statusDisplayMap[user.status].variant}>
+                  {statusDisplayMap[user.status].label}
+                </Badge>
               </td>
               <td className="py-3 px-4 text-muted-foreground text-sm">
                 {format(new Date(user.createdAt), 'MM/dd/yyyy, hh:mm a')}
               </td>
-              <td className="py-3 px-4">
-                <StatusToggle
-                  status={user.status}
-                  onToggle={() => handleToggleStatus(user.id)}
-                />
+              <td className="py-3 px-4 text-muted-foreground text-sm">
+                {user.lastLogin 
+                  ? format(new Date(user.lastLogin), 'MM/dd/yyyy, hh:mm a')
+                  : '—'
+                }
               </td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end gap-1">
@@ -194,10 +211,38 @@ export function UserTable({ users, sortBy, sortOrder, onSort }: UserTableProps) 
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem>View Profile</DropdownMenuItem>
-                      <DropdownMenuItem>Reset Password</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        Delete User
+                      <DropdownMenuItem onClick={() => onToggleStatus(user.id, user.status)}>
+                        {user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                       </DropdownMenuItem>
+                      <DropdownMenuItem>Reset Password</DropdownMenuItem>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete User
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete {user.name}? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onDeleteUser(user.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

@@ -1,52 +1,139 @@
-import { useState, useMemo } from 'react';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { setFilters, setPage, setPageSize } from '@/store/slices/userSlice';
+import { useState, useEffect, useMemo } from 'react';
+import { useUsers } from '@/api/hooks/useUsers';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { UserTabs } from '@/components/users/UserTabs';
 import { UserTable } from '@/components/users/UserTable';
 import { Pagination } from '@/components/users/Pagination';
 import { InviteUserModal } from '@/components/users/InviteUserModal';
-import { getUserCounts } from '@/data/mockUsers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UserPlus, Search } from 'lucide-react';
-import { UserStatus, User } from '@/types/user';
+import { UserPlus, Search, Loader2 } from 'lucide-react';
+import { UserStatus as ApiUserStatus } from '@/api/types';
+import { toast } from 'sonner';
+
+type TabStatus = 'all' | 'active' | 'deactivated' | 'invited';
+
+// Map UI status to API status
+const statusMap: Record<TabStatus, ApiUserStatus | undefined> = {
+  all: undefined,
+  active: 'ACTIVE',
+  deactivated: 'DEACTIVATED',
+  invited: 'PENDING',
+};
 
 export default function UserManagementPage() {
-  const dispatch = useAppDispatch();
-  const { users, filteredUsers, filters, pagination } = useAppSelector(
-    (state) => state.users
-  );
+  const {
+    users,
+    totalElements,
+    totalPages,
+    currentPage,
+    isLoading,
+    error,
+    fetchUsers,
+    deleteUser,
+    updateUser,
+  } = useUsers();
+
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabStatus>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pageSize, setPageSize] = useState(10);
+  const [sortBy, setSortBy] = useState<string>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const counts = useMemo(() => getUserCounts(users), [users]);
+  // Fetch users on mount and when filters change
+  useEffect(() => {
+    fetchUsers({
+      page: currentPage,
+      size: pageSize,
+      status: statusMap[activeTab],
+      search: searchQuery || undefined,
+    });
+  }, [activeTab, pageSize, searchQuery]);
 
-  const paginatedUsers = useMemo(() => {
-    const startIndex = (pagination.currentPage - 1) * pagination.pageSize;
-    return filteredUsers.slice(startIndex, startIndex + pagination.pageSize);
-  }, [filteredUsers, pagination.currentPage, pagination.pageSize]);
+  // Initial fetch
+  useEffect(() => {
+    fetchUsers({ page: 0, size: pageSize });
+  }, []);
 
-  const handleTabChange = (status: UserStatus | 'all') => {
-    dispatch(setFilters({ status }));
+  const counts = useMemo(() => {
+    // For now, show total count - in a real app, you'd get counts from API
+    return {
+      all: totalElements,
+      active: users.filter(u => u.status === 'ACTIVE').length,
+      deactivated: users.filter(u => u.status === 'DEACTIVATED').length,
+      invited: users.filter(u => u.status === 'PENDING').length,
+    };
+  }, [users, totalElements]);
+
+  const handleTabChange = (status: TabStatus) => {
+    setActiveTab(status);
   };
 
   const handleSearch = (search: string) => {
-    dispatch(setFilters({ search }));
+    setSearchQuery(search);
   };
 
-  const handleSort = (column: keyof User) => {
-    const newOrder =
-      filters.sortBy === column && filters.sortOrder === 'asc' ? 'desc' : 'asc';
-    dispatch(setFilters({ sortBy: column, sortOrder: newOrder }));
+  const handleSort = (column: string) => {
+    const newOrder = sortBy === column && sortOrder === 'asc' ? 'desc' : 'asc';
+    setSortBy(column);
+    setSortOrder(newOrder);
   };
 
   const handlePageChange = (page: number) => {
-    dispatch(setPage(page));
+    fetchUsers({
+      page: page - 1, // API uses 0-indexed pages
+      size: pageSize,
+      status: statusMap[activeTab],
+      search: searchQuery || undefined,
+    });
   };
 
   const handlePageSizeChange = (size: number) => {
-    dispatch(setPageSize(size));
+    setPageSize(size);
+    fetchUsers({
+      page: 0,
+      size,
+      status: statusMap[activeTab],
+      search: searchQuery || undefined,
+    });
   };
+
+  const handleToggleStatus = async (userId: string, currentStatus: ApiUserStatus) => {
+    const newStatus: ApiUserStatus = currentStatus === 'ACTIVE' ? 'DEACTIVATED' : 'ACTIVE';
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      const result = await updateUser(userId, {
+        name: user.name,
+        email: user.email,
+        status: newStatus,
+      });
+      if (result) {
+        toast.success(`User ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'}`);
+      }
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    const success = await deleteUser(userId);
+    if (success) {
+      toast.success('User deleted successfully');
+    }
+  };
+
+  const handleUserCreated = () => {
+    // Refresh the user list
+    fetchUsers({
+      page: 0,
+      size: pageSize,
+      status: statusMap[activeTab],
+      search: searchQuery || undefined,
+    });
+  };
+
+  if (error) {
+    toast.error(error);
+  }
 
   return (
     <DashboardLayout>
@@ -68,7 +155,7 @@ export default function UserManagementPage() {
         {/* Tabs and Search */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <UserTabs
-            activeTab={filters.status}
+            activeTab={activeTab}
             onTabChange={handleTabChange}
             counts={counts}
           />
@@ -76,7 +163,7 @@ export default function UserManagementPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search user"
-              value={filters.search}
+              value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               className="pl-10"
             />
@@ -85,27 +172,38 @@ export default function UserManagementPage() {
 
         {/* User Table */}
         <div className="bg-card rounded-lg border border-border shadow-sm">
-          <UserTable
-            users={paginatedUsers}
-            sortBy={filters.sortBy}
-            sortOrder={filters.sortOrder}
-            onSort={handleSort}
-          />
-          <div className="border-t border-border px-4">
-            <Pagination
-              currentPage={pagination.currentPage}
-              pageSize={pagination.pageSize}
-              totalItems={pagination.totalItems}
-              onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
-            />
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <>
+              <UserTable
+                users={users}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+                onToggleStatus={handleToggleStatus}
+                onDeleteUser={handleDeleteUser}
+              />
+              <div className="border-t border-border px-4">
+                <Pagination
+                  currentPage={currentPage + 1} // API uses 0-indexed, UI uses 1-indexed
+                  pageSize={pageSize}
+                  totalItems={totalElements}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       <InviteUserModal
         open={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
+        onUserCreated={handleUserCreated}
       />
     </DashboardLayout>
   );
