@@ -660,23 +660,36 @@ export default function RolesPage() {
                                   <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleManageMembers(group)}>
-                                  <Users className="w-4 h-4 mr-2" />
-                                  Manage Members
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditGroup(group)}>
-                                  <Pencil className="w-4 h-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteGroup(group.id)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
+                               <DropdownMenuContent align="end">
+                                 <DropdownMenuItem
+                                   onSelect={(e) => {
+                                     e.preventDefault();
+                                     void handleManageMembers(group);
+                                   }}
+                                 >
+                                   <Users className="w-4 h-4 mr-2" />
+                                   Manage Members
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem
+                                   onSelect={(e) => {
+                                     e.preventDefault();
+                                     handleEditGroup(group);
+                                   }}
+                                 >
+                                   <Pencil className="w-4 h-4 mr-2" />
+                                   Edit
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem
+                                   onSelect={(e) => {
+                                     e.preventDefault();
+                                     void handleDeleteGroup(group.id);
+                                   }}
+                                   className="text-destructive"
+                                 >
+                                   <Trash2 className="w-4 h-4 mr-2" />
+                                   Delete
+                                 </DropdownMenuItem>
+                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
