@@ -1,10 +1,9 @@
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { useState, useMemo } from 'react';
 import { UserGroup, GroupMember } from '@/types/content';
+import { UserResponse } from '@/api/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -12,24 +11,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { UserPlus, Trash2, Mail } from 'lucide-react';
-import { toast } from 'sonner';
+import { Plus, Minus, Search, Users, UserPlus } from 'lucide-react';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface MemberManagementModalProps {
   open: boolean;
   onClose: () => void;
   group: UserGroup | null;
-  onAddMember: (groupId: string, email: string, role: GroupMember['role']) => void;
-  onRemoveMember: (groupId: string, memberId: string) => void;
-  onChangeRole: (groupId: string, memberId: string, role: GroupMember['role']) => void;
+  allUsers: UserResponse[];
+  onAddMember: (groupId: string, userId: string) => void;
+  onRemoveMember: (groupId: string, userId: string) => void;
 }
 
 const getInitials = (name: string) => {
@@ -41,92 +40,77 @@ const getInitials = (name: string) => {
     .slice(0, 2);
 };
 
-const roleColors: Record<GroupMember['role'], string> = {
-  admin: 'bg-primary/10 text-primary border-primary/30',
-  member: 'bg-info/10 text-info border-info/30',
-  viewer: 'bg-muted text-muted-foreground border-muted-foreground/30',
-};
+const PAGE_SIZE = 5;
 
 export function MemberManagementModal({
   open,
   onClose,
   group,
+  allUsers,
   onAddMember,
   onRemoveMember,
-  onChangeRole,
 }: MemberManagementModalProps) {
-  const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [newMemberRole, setNewMemberRole] = useState<GroupMember['role']>('member');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const handleAddMember = () => {
-    if (!group || !newMemberEmail.trim()) return;
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newMemberEmail)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
+  // Get member user IDs
+  const memberUserIds = useMemo(() => {
+    if (!group) return new Set<string>();
+    return new Set(group.members.map((m) => m.userId));
+  }, [group]);
 
-    onAddMember(group.id, newMemberEmail.trim(), newMemberRole);
-    setNewMemberEmail('');
-    setNewMemberRole('member');
-    toast.success('Member added successfully');
+  // Filter non-members based on search
+  const nonMembers = useMemo(() => {
+    return allUsers.filter((user) => {
+      const isNotMember = !memberUserIds.has(user.id);
+      if (!searchQuery.trim()) return isNotMember;
+      
+      const query = searchQuery.toLowerCase();
+      return isNotMember && (
+        user.name.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query)
+      );
+    });
+  }, [allUsers, memberUserIds, searchQuery]);
+
+  // Pagination for non-members
+  const totalPages = Math.ceil(nonMembers.length / PAGE_SIZE);
+  const paginatedNonMembers = nonMembers.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
+  // Reset page when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
   };
 
   if (!group) return null;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Manage Members - {group.name}</DialogTitle>
           <DialogDescription>
-            Add or remove members from this group and manage their roles.
+            Add or remove members from this group.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Add Member Form */}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Email address"
-                value={newMemberEmail}
-                onChange={(e) => setNewMemberEmail(e.target.value)}
-                className="pl-9"
-                onKeyDown={(e) => e.key === 'Enter' && handleAddMember()}
-              />
-            </div>
-            <Select value={newMemberRole} onValueChange={(v: GroupMember['role']) => setNewMemberRole(v)}>
-              <SelectTrigger className="w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="member">Member</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleAddMember} disabled={!newMemberEmail.trim()}>
-              <UserPlus className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Members List */}
+        <div className="flex-1 overflow-hidden flex flex-col gap-4">
+          {/* Current Members Section */}
           <div className="border rounded-lg">
-            <div className="px-4 py-2 border-b bg-muted/50">
+            <div className="px-4 py-2 border-b bg-muted/50 flex items-center gap-2">
+              <Users className="w-4 h-4" />
               <span className="text-sm font-medium">
-                {group.members.length} Member{group.members.length !== 1 ? 's' : ''}
+                Current Members ({group.members.length})
               </span>
             </div>
-            <ScrollArea className="h-64">
+            <ScrollArea className="h-40">
               {group.members.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  <UserPlus className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                  <p>No members yet</p>
-                  <p className="text-sm">Add members using the form above</p>
+                <div className="p-4 text-center text-muted-foreground text-sm">
+                  No members yet
                 </div>
               ) : (
                 <div className="divide-y">
@@ -136,8 +120,8 @@ export function MemberManagementModal({
                       className="flex items-center justify-between p-3 hover:bg-muted/30"
                     >
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-9 h-9">
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
                             {getInitials(member.userName)}
                           </AvatarFallback>
                         </Avatar>
@@ -146,36 +130,117 @@ export function MemberManagementModal({
                           <p className="text-xs text-muted-foreground">{member.email}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Select
-                          value={member.role}
-                          onValueChange={(role: GroupMember['role']) =>
-                            onChangeRole(group.id, member.id, role)
-                          }
-                        >
-                          <SelectTrigger className="w-24 h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="member">Member</SelectItem>
-                            <SelectItem value="viewer">Viewer</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => onRemoveMember(group.id, member.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => onRemoveMember(group.id, member.userId)}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>
               )}
             </ScrollArea>
+          </div>
+
+          {/* Available Users Section */}
+          <div className="border rounded-lg flex-1 flex flex-col min-h-0">
+            <div className="px-4 py-2 border-b bg-muted/50 flex items-center gap-2">
+              <UserPlus className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Available Users ({nonMembers.length})
+              </span>
+            </div>
+            
+            {/* Search */}
+            <div className="p-2 border-b">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="pl-9 h-8"
+                />
+              </div>
+            </div>
+
+            {/* Users List */}
+            <ScrollArea className="flex-1 min-h-[120px]">
+              {paginatedNonMembers.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-sm">
+                  {searchQuery ? 'No users found' : 'All users are members'}
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {paginatedNonMembers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-3 hover:bg-muted/30"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className="bg-secondary/50 text-secondary-foreground text-xs">
+                            {getInitials(user.name || user.email)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{user.name || user.email}</p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                        onClick={() => onAddMember(group.id, user.id)}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="p-2 border-t">
+                <Pagination>
+                  <PaginationContent className="gap-1">
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                      const page = currentPage <= 2 ? i + 1 : currentPage - 1 + i;
+                      if (page > totalPages) return null;
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
