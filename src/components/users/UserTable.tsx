@@ -37,6 +37,7 @@ interface UserTableProps {
   onSort: (column: string) => void;
   onToggleStatus: (userId: string, currentStatus: UserStatus) => void;
   onDeleteUser: (userId: string) => void;
+  onEditUser: (user: UserResponse) => void;
 }
 
 interface SortableHeaderProps {
@@ -82,7 +83,7 @@ const statusDisplayMap: Record<UserStatus, { label: string; variant: 'default' |
   DEACTIVATED: { label: 'Deactivated', variant: 'destructive' },
 };
 
-export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, onDeleteUser }: UserTableProps) {
+export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, onDeleteUser, onEditUser }: UserTableProps) {
   const getInitials = (name: string) => {
     const parts = name.split(' ');
     return parts.length > 1 
@@ -197,7 +198,7 @@ export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, on
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditUser(user)}>
                         <Edit className="w-4 h-4" />
                       </Button>
                     </TooltipTrigger>

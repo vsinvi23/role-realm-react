@@ -8,6 +8,7 @@ import { Shield, Users, Eye, Plus, Download, Check, X, Info, ChevronDown, Chevro
 import { UserGroupFormModal } from '@/components/roles/UserGroupFormModal';
 import { MemberManagementModal } from '@/components/roles/MemberManagementModal';
 import { RoleFormModal, RoleDefinition, RolePermissions, moduleDefinitions, permissionDefinitions as permissionDefs } from '@/components/roles/RoleFormModal';
+import { PermissionFormModal } from '@/components/roles/PermissionFormModal';
 import { mockCategories } from '@/data/mockContent';
 import { UserGroup, GroupMember } from '@/types/content';
 import { toast } from 'sonner';
@@ -19,7 +20,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useRoles } from '@/api/hooks/useRoles';
 import { useGroups } from '@/api/hooks/useGroups';
 import { usePermissions } from '@/api/hooks/usePermissions';
-import { RoleResponse, GroupResponse, PermissionResponse } from '@/api/types';
+import { useUsers } from '@/api/hooks/useUsers';
+import { RoleResponse, GroupResponse, PermissionResponse, PermissionRequest } from '@/api/types';
 
 // Permission Definitions
 interface PermissionDef {
@@ -201,8 +203,16 @@ export default function RolesPage() {
   const { 
     permissions: apiPermissions, 
     isLoading: permissionsLoading, 
-    fetchPermissions 
+    fetchPermissions,
+    createPermission,
+    updatePermission,
+    deletePermission: deletePermissionApi
   } = usePermissions();
+
+  const {
+    users: allUsers,
+    fetchUsers
+  } = useUsers();
 
   // Local state for UI
   const [userGroups, setUserGroups] = useState<UserGroupWithRole[]>([]);
@@ -218,11 +228,18 @@ export default function RolesPage() {
   const [deleteRoleDialogOpen, setDeleteRoleDialogOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<RoleResponse | null>(null);
 
+  // Permission management state
+  const [permissionModalOpen, setPermissionModalOpen] = useState(false);
+  const [editingPermission, setEditingPermission] = useState<PermissionResponse | null>(null);
+  const [deletePermissionDialogOpen, setDeletePermissionDialogOpen] = useState(false);
+  const [permissionToDelete, setPermissionToDelete] = useState<PermissionResponse | null>(null);
+
   // Fetch data on mount
   useEffect(() => {
     fetchRoles();
     fetchGroups();
     fetchPermissions();
+    fetchUsers({ page: 0, size: 100 }); // Fetch users for member lookup
   }, []);
 
   // Sync API groups to local state
@@ -387,18 +404,24 @@ export default function RolesPage() {
   };
 
   const handleAddMember = async (groupId: string, email: string, role: GroupMember['role']) => {
-    // In a real app, you'd get the userId from the email
-    const userId = `user-${Date.now()}`;
-    const success = await addUserToGroup(userId, groupId);
+    // Find user by email from fetched users
+    const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    
+    if (!user) {
+      toast.error('User not found with this email');
+      return;
+    }
+    
+    const success = await addUserToGroup(user.id, groupId);
     if (success) {
       setUserGroups((prev) =>
         prev.map((g) => {
           if (g.id === groupId) {
             const newMember: GroupMember = {
               id: `m-${Date.now()}`,
-              userId,
-              userName: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-              email,
+              userId: user.id,
+              userName: user.name,
+              email: user.email,
               role,
               addedAt: new Date().toISOString(),
             };
@@ -407,7 +430,8 @@ export default function RolesPage() {
           return g;
         })
       );
-      toast.success('Member added');
+    } else {
+      toast.error('Failed to add member');
     }
   };
 
@@ -425,8 +449,58 @@ export default function RolesPage() {
             return g;
           })
         );
-        toast.success('Member removed');
+      } else {
+        toast.error('Failed to remove member');
       }
+    }
+  };
+
+  // Permission handlers
+  const handleCreatePermission = () => {
+    setEditingPermission(null);
+    setPermissionModalOpen(true);
+  };
+
+  const handleEditPermission = (permission: PermissionResponse) => {
+    setEditingPermission(permission);
+    setPermissionModalOpen(true);
+  };
+
+  const handleDeletePermissionClick = (permission: PermissionResponse) => {
+    setPermissionToDelete(permission);
+    setDeletePermissionDialogOpen(true);
+  };
+
+  const handleDeletePermission = async () => {
+    if (permissionToDelete) {
+      const success = await deletePermissionApi(permissionToDelete.id);
+      if (success) {
+        toast.success('Permission deleted');
+      } else {
+        toast.error('Failed to delete permission');
+      }
+      setDeletePermissionDialogOpen(false);
+      setPermissionToDelete(null);
+    }
+  };
+
+  const handlePermissionSubmit = async (data: PermissionRequest): Promise<boolean> => {
+    if (editingPermission) {
+      const result = await updatePermission(editingPermission.id, data);
+      if (result) {
+        toast.success('Permission updated');
+        return true;
+      }
+      toast.error('Failed to update permission');
+      return false;
+    } else {
+      const result = await createPermission(data);
+      if (result) {
+        toast.success('Permission created');
+        return true;
+      }
+      toast.error('Failed to create permission');
+      return false;
     }
   };
 
@@ -748,8 +822,12 @@ export default function RolesPage() {
 
               {/* Permissions List */}
               <Card className="mt-6">
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-base">All Permissions</CardTitle>
+                  <Button size="sm" onClick={handleCreatePermission}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Permission
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -762,6 +840,7 @@ export default function RolesPage() {
                         <TableHead className="text-center">Delete</TableHead>
                         <TableHead className="text-center">Publish</TableHead>
                         <TableHead className="text-center">Manage</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -786,11 +865,33 @@ export default function RolesPage() {
                           <TableCell className="text-center">
                             <PermissionCell allowed={permission.manage} />
                           </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEditPermission(permission)}>
+                                  <Pencil className="w-4 h-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeletePermissionClick(permission)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
                         </TableRow>
                       ))}
                       {apiPermissions.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                          <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                             No permissions configured
                           </TableCell>
                         </TableRow>
@@ -843,6 +944,39 @@ export default function RolesPage() {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteRole}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Permission Form Modal */}
+        <PermissionFormModal
+          open={permissionModalOpen}
+          onClose={() => {
+            setPermissionModalOpen(false);
+            setEditingPermission(null);
+          }}
+          permission={editingPermission}
+          onSubmit={handlePermissionSubmit}
+        />
+
+        {/* Delete Permission Confirmation Dialog */}
+        <AlertDialog open={deletePermissionDialogOpen} onOpenChange={setDeletePermissionDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Permission</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete the permission for module "{permissionToDelete?.module}"? 
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeletePermission}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Delete
