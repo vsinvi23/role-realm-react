@@ -1,0 +1,703 @@
+openapi: 3.0.3
+info:
+  title: User Management API
+  description: API for managing users, roles, permissions, groups and mappings
+  version: 1.0.0
+servers:
+  - url: https://api.yourdomain.com/v1
+    description: Production server (replace with your URL)
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AuthLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    AuthTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+    AuthSignup:
+      type: object
+      required: [name, email, password, status]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        status:
+          type: string
+    UserRequest:
+      type: object
+      required: [name, email, status]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        status:
+          type: string
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+        lastLogin:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    PageResponseUser:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        last:
+          type: boolean
+    RoleRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        system:
+          type: boolean
+    RoleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        system:
+          type: boolean
+    PermissionRequest:
+      type: object
+      required: [module]
+      properties:
+        module:
+          type: string
+        view:
+          type: boolean
+        create:
+          type: boolean
+        edit:
+          type: boolean
+        delete:
+          type: boolean
+        publish:
+          type: boolean
+        manage:
+          type: boolean
+    PermissionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        module:
+          type: string
+        view:
+          type: boolean
+        create:
+          type: boolean
+        edit:
+          type: boolean
+        delete:
+          type: boolean
+        publish:
+          type: boolean
+        manage:
+          type: boolean
+    GroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    GroupResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+paths:
+  /api/auth/signup:
+    post:
+      summary: Signup (create user)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthSignup'
+      responses:
+        '201':
+          description: Created
+        '409':
+          description: Conflict (already exists)
+  /api/auth/login:
+    post:
+      summary: Login and get JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLogin'
+      responses:
+        '200':
+          description: Token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          description: Unauthorized
+  /api/users:
+    post:
+      summary: Create user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    get:
+      summary: Get users (paged)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+          example: 0
+        - in: query
+          name: size
+          schema:
+            type: integer
+          required: false
+          example: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PageResponse
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseUser'
+  /api/users/{userId}:
+    get:
+      summary: Get user by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: UserResponse
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    put:
+      summary: Update user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    delete:
+      summary: Delete user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+  /api/roles:
+    post:
+      summary: Create role
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+    get:
+      summary: Get all roles
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleResponse'
+  /api/roles/{roleId}:
+    get:
+      summary: Get role by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+    put:
+      summary: Update role
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+    delete:
+      summary: Delete role
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: No Content
+  /api/permissions:
+    post:
+      summary: Create permission
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionResponse'
+    get:
+      summary: Get all permissions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PermissionResponse'
+  /api/permissions/{permissionId}:
+    get:
+      summary: Get permission by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: permissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionResponse'
+    put:
+      summary: Update permission
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: permissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionResponse'
+    delete:
+      summary: Delete permission
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: No Content
+  /api/role-permissions/roles/{roleId}/permissions/{permissionId}:
+    post:
+      summary: Assign permission to role
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: permissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+    delete:
+      summary: Remove permission from role
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: permissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+  /api/role-permissions/roles/{roleId}/permissions:
+    get:
+      summary: Get permissions by role
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+      responses:
+        '200':
+          description: list of permission ids
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+  /api/role-permissions/permissions/{permissionId}/roles:
+    get:
+      summary: Get roles by permission
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: permissionId
+          required: true
+      responses:
+        '200':
+          description: list of role ids
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+  /api/groups:
+    post:
+      summary: Create group
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+    get:
+      summary: Get all groups
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupResponse'
+  /api/groups/{groupId}:
+    get:
+      summary: Get group by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+    put:
+      summary: Update group
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+    delete:
+      summary: Delete group
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: No Content
+  /api/group-roles/groups/{groupId}/roles/{roleId}:
+    post:
+      summary: Assign role to group
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: No Content
+    delete:
+      summary: Remove role from group
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: No Content
+  /api/group-roles/groups/{groupId}/roles:
+    get:
+      summary: Get roles by group
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: list of role ids
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+  /api/group-roles/roles/{roleId}/groups:
+    get:
+      summary: Get groups by role
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: list of group ids
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+  /api/user-groups/users/{userId}/groups/{groupId}:
+    post:
+      summary: Add user to group
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: No Content
+    delete:
+      summary: Remove user from group
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: No Content
+  /api/user-groups/users/{userId}/groups:
+    get:
+      summary: Get groups for user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: list of group ids
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+  /api/user-groups/groups/{groupId}/users:
+    get:
+      summary: Get users for group
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: list of user ids
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+security:
+  - bearerAuth: []
+
