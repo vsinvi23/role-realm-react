@@ -5,10 +5,11 @@ import { UserTabs } from '@/components/users/UserTabs';
 import { UserTable } from '@/components/users/UserTable';
 import { Pagination } from '@/components/users/Pagination';
 import { InviteUserModal } from '@/components/users/InviteUserModal';
+import { EditUserModal } from '@/components/users/EditUserModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserPlus, Search, Loader2 } from 'lucide-react';
-import { UserStatus as ApiUserStatus } from '@/api/types';
+import { UserStatus as ApiUserStatus, UserResponse } from '@/api/types';
 import { toast } from 'sonner';
 
 type TabStatus = 'all' | 'active' | 'deactivated' | 'invited';
@@ -35,6 +36,8 @@ export default function UserManagementPage() {
   } = useUsers();
 
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
   const [activeTab, setActiveTab] = useState<TabStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [pageSize, setPageSize] = useState(10);
@@ -121,6 +124,21 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleEditUser = (user: UserResponse) => {
+    setEditingUser(user);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveUser = async (userId: string, data: { name: string; email: string; status: ApiUserStatus }): Promise<boolean> => {
+    const result = await updateUser(userId, data);
+    if (result) {
+      toast.success('User updated successfully');
+      return true;
+    }
+    toast.error('Failed to update user');
+    return false;
+  };
+
   const handleUserCreated = () => {
     // Refresh the user list
     fetchUsers({
@@ -185,6 +203,7 @@ export default function UserManagementPage() {
                 onSort={handleSort}
                 onToggleStatus={handleToggleStatus}
                 onDeleteUser={handleDeleteUser}
+                onEditUser={handleEditUser}
               />
               <div className="border-t border-border px-4">
                 <Pagination
@@ -204,6 +223,16 @@ export default function UserManagementPage() {
         open={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
         onUserCreated={handleUserCreated}
+      />
+
+      <EditUserModal
+        open={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingUser(null);
+        }}
+        user={editingUser}
+        onSave={handleSaveUser}
       />
     </DashboardLayout>
   );
