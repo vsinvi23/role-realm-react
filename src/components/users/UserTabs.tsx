@@ -1,22 +1,23 @@
 import { cn } from '@/lib/utils';
-import { UserStatus } from '@/types/user';
 import { CheckCircle2, XCircle, UserPlus, Users } from 'lucide-react';
 
+type TabStatus = 'all' | 'active' | 'deactivated' | 'invited';
+
 interface StatusTab {
-  id: UserStatus | 'all';
+  id: TabStatus;
   label: string;
   count: number;
   icon: React.ElementType;
 }
 
 interface UserTabsProps {
-  activeTab: UserStatus | 'all';
-  onTabChange: (tab: UserStatus | 'all') => void;
+  activeTab: TabStatus;
+  onTabChange: (tab: TabStatus) => void;
   counts: {
+    all: number;
     active: number;
     deactivated: number;
     invited: number;
-    total: number;
   };
 }
 
@@ -25,7 +26,7 @@ export function UserTabs({ activeTab, onTabChange, counts }: UserTabsProps) {
     { id: 'active', label: 'Active', count: counts.active, icon: CheckCircle2 },
     { id: 'deactivated', label: 'Deactivated', count: counts.deactivated, icon: XCircle },
     { id: 'invited', label: 'Invited', count: counts.invited, icon: UserPlus },
-    { id: 'all', label: 'Total Users', count: counts.total, icon: Users },
+    { id: 'all', label: 'Total Users', count: counts.all, icon: Users },
   ];
 
   return (
