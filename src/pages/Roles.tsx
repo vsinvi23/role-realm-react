@@ -359,8 +359,26 @@ export default function RolesPage() {
     }
   };
 
-  const handleManageMembers = (group: UserGroupWithRole) => {
-    setManagingGroup(group);
+  const handleManageMembers = async (group: UserGroupWithRole) => {
+    // Fetch current members from API
+    const memberUserIds = await getUsersByGroup(group.id);
+    const members = memberUserIds
+      .map(userId => {
+        const user = allUsers.find(u => u.id === userId);
+        if (!user) return null;
+        return {
+          id: `m-${userId}`,
+          userId: user.id,
+          userName: user.name,
+          email: user.email,
+          role: 'member',
+          addedAt: new Date().toISOString(),
+        } as GroupMember;
+      })
+      .filter((m): m is GroupMember => m !== null);
+    
+    const groupWithMembers = { ...group, members };
+    setManagingGroup(groupWithMembers);
     setMemberModalOpen(true);
   };
 
@@ -413,31 +431,47 @@ export default function RolesPage() {
     
     const success = await addUserToGroup(userId, groupId);
     if (success) {
+      const newMember: GroupMember = {
+        id: `m-${userId}`,
+        userId: user.id,
+        userName: user.name,
+        email: user.email,
+        role: 'member',
+        addedAt: new Date().toISOString(),
+      };
+      
+      // Update managing group state for modal
+      setManagingGroup((prev) => {
+        if (!prev || prev.id !== groupId) return prev;
+        return { ...prev, members: [...prev.members, newMember] };
+      });
+      
+      // Update user groups state
       setUserGroups((prev) =>
         prev.map((g) => {
           if (g.id === groupId) {
-            const newMember: GroupMember = {
-              id: `m-${Date.now()}`,
-              userId: user.id,
-              userName: user.name,
-              email: user.email,
-              role: 'member',
-              addedAt: new Date().toISOString(),
-            };
             return { ...g, members: [...g.members, newMember] };
           }
           return g;
         })
       );
-      toast.success('Member added');
+      toast.success(`${user.name} added to group`);
     } else {
       toast.error('Failed to add member');
     }
   };
 
   const handleRemoveMember = async (groupId: string, userId: string) => {
+    const member = managingGroup?.members.find(m => m.userId === userId);
     const success = await removeUserFromGroup(userId, groupId);
     if (success) {
+      // Update managing group state for modal
+      setManagingGroup((prev) => {
+        if (!prev || prev.id !== groupId) return prev;
+        return { ...prev, members: prev.members.filter((m) => m.userId !== userId) };
+      });
+      
+      // Update user groups state
       setUserGroups((prev) =>
         prev.map((g) => {
           if (g.id === groupId) {
@@ -446,7 +480,7 @@ export default function RolesPage() {
           return g;
         })
       );
-      toast.success('Member removed');
+      toast.success(`${member?.userName || 'Member'} removed from group`);
     } else {
       toast.error('Failed to remove member');
     }
