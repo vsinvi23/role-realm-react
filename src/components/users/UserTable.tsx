@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { UserResponse, UserStatus } from '@/api/types';
 import { format } from 'date-fns';
 import { RoleBadge } from './RoleBadge';
 import { StatusToggle } from './StatusToggle';
-import { ChevronDown, ChevronUp, History, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+import { UserProfileModal } from './UserProfileModal';
+import { ChevronDown, ChevronUp, History, Edit, MoreHorizontal, Trash2, User } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -84,11 +86,19 @@ const statusDisplayMap: Record<UserStatus, { label: string; variant: 'default' |
 };
 
 export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, onDeleteUser, onEditUser }: UserTableProps) {
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [viewingUser, setViewingUser] = useState<UserResponse | null>(null);
+
   const getInitials = (name: string) => {
     const parts = name.split(' ');
     return parts.length > 1 
       ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
       : name.substring(0, 2).toUpperCase();
+  };
+
+  const handleViewProfile = (user: UserResponse) => {
+    setViewingUser(user);
+    setProfileModalOpen(true);
   };
 
   if (users.length === 0) {
@@ -211,7 +221,10 @@ export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, on
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>View Profile</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleViewProfile(user)}>
+                        <User className="w-4 h-4 mr-2" />
+                        View Profile
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onToggleStatus(user.id, user.status)}>
                         {user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                       </DropdownMenuItem>
@@ -252,6 +265,13 @@ export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, on
           ))}
         </tbody>
       </table>
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        open={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        user={viewingUser}
+      />
     </div>
   );
 }

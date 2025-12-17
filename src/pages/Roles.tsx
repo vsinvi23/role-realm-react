@@ -9,6 +9,7 @@ import { UserGroupFormModal } from '@/components/roles/UserGroupFormModal';
 import { MemberManagementModal } from '@/components/roles/MemberManagementModal';
 import { RoleFormModal, RoleDefinition, RolePermissions, moduleDefinitions, permissionDefinitions as permissionDefs } from '@/components/roles/RoleFormModal';
 import { PermissionFormModal } from '@/components/roles/PermissionFormModal';
+import { RolePermissionAssignModal } from '@/components/roles/RolePermissionAssignModal';
 import { mockCategories } from '@/data/mockContent';
 import { UserGroup, GroupMember } from '@/types/content';
 import { toast } from 'sonner';
@@ -183,7 +184,10 @@ export default function RolesPage() {
     fetchRoles, 
     createRole, 
     updateRole, 
-    deleteRole: deleteRoleApi 
+    deleteRole: deleteRoleApi,
+    getPermissionsByRole,
+    assignPermission,
+    removePermission
   } = useRoles();
   
   const { 
@@ -228,6 +232,12 @@ export default function RolesPage() {
   const [deleteRoleDialogOpen, setDeleteRoleDialogOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<RoleResponse | null>(null);
 
+  // Role Permission Assignment state
+  const [rolePermissionModalOpen, setRolePermissionModalOpen] = useState(false);
+  const [assigningRole, setAssigningRole] = useState<RoleResponse | null>(null);
+  const [assignedPermissionIds, setAssignedPermissionIds] = useState<string[]>([]);
+  const [loadingRolePermissions, setLoadingRolePermissions] = useState(false);
+
   // Permission management state
   const [permissionModalOpen, setPermissionModalOpen] = useState(false);
   const [editingPermission, setEditingPermission] = useState<PermissionResponse | null>(null);
@@ -248,11 +258,21 @@ export default function RolesPage() {
       const groupsWithRoles = await Promise.all(
         apiGroups.map(async (group) => {
           const roleIds = await getRolesByGroup(group.id);
+          // Map API members to GroupMember format if available
+          const members: GroupMember[] = (group.members || []).map(user => ({
+            id: `m-${user.id}`,
+            userId: user.id,
+            userName: user.name,
+            email: user.email,
+            role: 'member' as const,
+            addedAt: user.createdAt,
+          }));
+          
           return {
             id: group.id,
             name: group.name,
             description: group.description || undefined,
-            members: [],
+            members,
             permissions: [],
             roleId: roleIds[0] || undefined,
           } as UserGroupWithRole;
@@ -336,6 +356,39 @@ export default function RolesPage() {
       }
     }
     setRoleModalOpen(false);
+  };
+
+  // Role Permission Assignment handlers
+  const handleAssignPermissions = async (role: RoleResponse) => {
+    setAssigningRole(role);
+    setLoadingRolePermissions(true);
+    setRolePermissionModalOpen(true);
+    
+    const permissionIds = await getPermissionsByRole(role.id);
+    setAssignedPermissionIds(permissionIds);
+    setLoadingRolePermissions(false);
+  };
+
+  const handleAssignPermissionToRole = async (roleId: string, permissionId: string): Promise<boolean> => {
+    const success = await assignPermission(roleId, permissionId);
+    if (success) {
+      setAssignedPermissionIds(prev => [...prev, permissionId]);
+      toast.success('Permission assigned');
+    } else {
+      toast.error('Failed to assign permission');
+    }
+    return success;
+  };
+
+  const handleRemovePermissionFromRole = async (roleId: string, permissionId: string): Promise<boolean> => {
+    const success = await removePermission(roleId, permissionId);
+    if (success) {
+      setAssignedPermissionIds(prev => prev.filter(id => id !== permissionId));
+      toast.success('Permission removed');
+    } else {
+      toast.error('Failed to remove permission');
+    }
+    return success;
   };
 
   // User group handlers
@@ -755,6 +808,10 @@ export default function RolesPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleAssignPermissions(role)}>
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  Assign Permissions
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleEditRole({
                                   id: role.id,
                                   name: role.name,
@@ -1028,6 +1085,22 @@ export default function RolesPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Role Permission Assignment Modal */}
+        <RolePermissionAssignModal
+          open={rolePermissionModalOpen}
+          onClose={() => {
+            setRolePermissionModalOpen(false);
+            setAssigningRole(null);
+            setAssignedPermissionIds([]);
+          }}
+          role={assigningRole}
+          allPermissions={apiPermissions}
+          assignedPermissionIds={assignedPermissionIds}
+          onAssign={handleAssignPermissionToRole}
+          onRemove={handleRemovePermissionFromRole}
+          isLoading={loadingRolePermissions}
+        />
       </div>
     </DashboardLayout>
   );
