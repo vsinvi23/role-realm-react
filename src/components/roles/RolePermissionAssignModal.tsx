@@ -103,7 +103,7 @@ export function RolePermissionAssignModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5" />
@@ -119,7 +119,7 @@ export function RolePermissionAssignModal({
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         ) : (
-          <ScrollArea className="flex-1 max-h-[400px] pr-4">
+          <ScrollArea className="flex-1 h-[350px] pr-4">
             <div className="space-y-2">
               {allPermissions.map((permission) => {
                 const isAssigned = localAssigned.has(permission.id);

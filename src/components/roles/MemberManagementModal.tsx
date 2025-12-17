@@ -90,7 +90,7 @@ export function MemberManagementModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Manage Members - {group.name}</DialogTitle>
           <DialogDescription>
@@ -98,7 +98,7 @@ export function MemberManagementModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col gap-4">
+        <div className="flex-1 overflow-hidden flex flex-col gap-4 min-h-0">
           {/* Current Members Section */}
           <div className="border rounded-lg">
             <div className="px-4 py-2 border-b bg-muted/50 flex items-center gap-2">
@@ -107,7 +107,7 @@ export function MemberManagementModal({
                 Current Members ({group.members.length})
               </span>
             </div>
-            <ScrollArea className="h-40">
+            <ScrollArea className="h-[180px]">
               {group.members.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground text-sm">
                   No members yet
@@ -168,7 +168,7 @@ export function MemberManagementModal({
             </div>
 
             {/* Users List */}
-            <ScrollArea className="flex-1 min-h-[120px]">
+            <ScrollArea className="flex-1 h-[200px]">
               {paginatedNonMembers.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground text-sm">
                   {searchQuery ? 'No users found' : 'All users are members'}
