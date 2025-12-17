@@ -90,7 +90,7 @@ export function MemberManagementModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Manage Members - {group.name}</DialogTitle>
           <DialogDescription>
@@ -98,7 +98,7 @@ export function MemberManagementModal({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4" style={{ maxHeight: 'calc(80vh - 120px)' }}>
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
           <div className="flex flex-col gap-4">
             {/* Current Members Section */}
             <div className="border rounded-lg">
@@ -108,7 +108,7 @@ export function MemberManagementModal({
                   Current Members ({group.members.length})
                 </span>
               </div>
-              <div className="max-h-[200px] overflow-y-auto">
+              <div className="max-h-56 overflow-y-auto">
                 {group.members.length === 0 ? (
                   <div className="p-4 text-center text-muted-foreground text-sm">
                     No members yet
@@ -154,7 +154,7 @@ export function MemberManagementModal({
                   Available Users ({nonMembers.length})
                 </span>
               </div>
-              
+
               {/* Search */}
               <div className="p-2 border-b">
                 <div className="relative">
@@ -169,7 +169,7 @@ export function MemberManagementModal({
               </div>
 
               {/* Users List */}
-              <div className="max-h-[200px] overflow-y-auto">
+              <div className="max-h-64 overflow-y-auto">
                 {paginatedNonMembers.length === 0 ? (
                   <div className="p-4 text-center text-muted-foreground text-sm">
                     {searchQuery ? 'No users found' : 'All users are members'}
@@ -208,7 +208,7 @@ export function MemberManagementModal({
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="p-2 border-t">
+                <div className="p-2 border-t bg-background">
                   <Pagination>
                     <PaginationContent className="gap-1">
                       <PaginationItem>
@@ -244,7 +244,7 @@ export function MemberManagementModal({
               )}
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
