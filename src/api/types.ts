@@ -111,6 +111,7 @@ export interface GroupResponse {
   id: string;
   name: string;
   description: string | null;
+  members?: UserResponse[];
 }
 
 // ============================================
