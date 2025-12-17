@@ -14,9 +14,12 @@ import DashboardPage from './pages/Dashboard';
 import ContentManagement from './pages/ContentManagement';
 import CourseManagement from './pages/CourseManagement';
 import ArticleManagement from './pages/ArticleManagement';
+import ArticleCreator from './pages/ArticleCreator';
 import MyTasks from './pages/MyTasks';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import ProfilePage from './pages/ProfilePage';
+import UserSettings from './pages/UserSettings';
 import PublicHome from './pages/PublicHome';
 import Auth from './pages/Auth';
 import TechnologyPage from './pages/TechnologyPage';
@@ -57,9 +60,12 @@ const App = () => (
               <Route path="/content" element={<ProtectedRoute><ContentManagement /></ProtectedRoute>} />
               <Route path="/courses" element={<ProtectedRoute><CourseManagement /></ProtectedRoute>} />
               <Route path="/articles" element={<ProtectedRoute><ArticleManagement /></ProtectedRoute>} />
+              <Route path="/articles/create" element={<ProtectedRoute><ArticleCreator /></ProtectedRoute>} />
               <Route path="/my-tasks" element={<ProtectedRoute><MyTasks /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+              <Route path="/account-settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

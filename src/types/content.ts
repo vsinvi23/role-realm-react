@@ -99,6 +99,39 @@ export interface Attachment {
   url: string;
   type: string;
   size: number;
+  uploadedAt?: string;
+}
+
+// ===============================
+// CONTENT BLOCK TYPES
+// ===============================
+
+export type ContentBlockType = 
+  | 'paragraph' 
+  | 'heading1' 
+  | 'heading2' 
+  | 'heading3' 
+  | 'code' 
+  | 'quote' 
+  | 'image' 
+  | 'list' 
+  | 'ordered-list'
+  | 'divider';
+
+export interface CodeBlockData {
+  language: string;
+  code: string;
+  filename?: string;
+}
+
+export interface ContentBlock {
+  id: string;
+  type: ContentBlockType;
+  content: string;
+  codeData?: CodeBlockData;
+  imageUrl?: string;
+  imageAlt?: string;
+  listItems?: string[];
 }
 
 // ===============================
@@ -110,8 +143,9 @@ export interface Article {
   title: string;
   slug: string;
   content: string;
+  contentBlocks?: ContentBlock[];
   excerpt: string;
-  categoryId: string;
+  categoryId?: string;
   categoryPath: string[];
   author: string;
   status: WorkflowStatus;
