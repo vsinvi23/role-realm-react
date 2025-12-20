@@ -6,19 +6,19 @@ This document provides the complete single-database schema for the CMS solution.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           SINGLE DATABASE                                    │
+│                     SINGLE DATABASE (Stateless JWT Auth)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐           │
 │  │ AUTHENTICATION   │  │ AUTHORIZATION    │  │ CONTENT          │           │
 │  │ ─────────────    │  │ ─────────────    │  │ ─────────────    │           │
 │  │ • users          │  │ • roles          │  │ • categories     │           │
-│  │ • user_sessions  │  │ • permissions    │  │ • articles       │           │
-│  │ • password_reset │  │ • role_perms     │  │ • courses        │           │
+│  │ • password_reset │  │ • permissions    │  │ • articles       │           │
+│  │                  │  │ • role_perms     │  │ • courses        │           │
 │  └──────────────────┘  │ • user_roles     │  │ • lessons        │           │
 │                        │ • groups         │  └──────────────────┘           │
-│                        │ • user_groups    │                                  │
-│                        │ • group_roles    │                                  │
+│  NOTE: Stateless JWT   │ • user_groups    │                                  │
+│  No session storage    │ • group_roles    │                                  │
 │                        └──────────────────┘                                  │
 │                                                                              │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐           │
@@ -32,6 +32,15 @@ This document provides the complete single-database schema for the CMS solution.
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+## JWT Authentication Configuration
+
+This schema uses **stateless JWT authentication**:
+
+- **Access Token Expiry**: 15-30 minutes (recommended)
+- **No Refresh Tokens**: Users re-authenticate when token expires
+- **Token Storage**: Client-side only (localStorage)
+- **Password Reset**: Uses short-lived tokens (15 minutes) stored in `password_reset_tokens` table
 
 ## Entity Relationship Diagram
 
@@ -144,20 +153,8 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_users_created ON users(created_at);
 
--- User sessions for token management
-CREATE TABLE user_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token_hash VARCHAR(255) NOT NULL,
-    device_info JSONB,
-    ip_address INET,
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
-CREATE INDEX idx_user_sessions_token ON user_sessions(token_hash);
-CREATE INDEX idx_user_sessions_expires ON user_sessions(expires_at);
+-- NOTE: No user_sessions table - using stateless JWT authentication
+-- Access tokens are validated by signature only, no server-side storage
 
 -- Password reset tokens
 CREATE TABLE password_reset_tokens (
