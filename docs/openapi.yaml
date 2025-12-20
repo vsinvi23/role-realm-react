@@ -1,84 +1,102 @@
 openapi: 3.0.3
 info:
-  title: User Management API
-  description: API for managing users, roles, permissions, groups and mappings
-  version: 1.0.0
+  title: CMS REST API
+  description: |
+    Complete REST API for the CMS platform supporting content management, user administration,
+    and workflow operations. Uses stateless JWT authentication with short-lived access tokens.
+  version: 2.0.0
+  contact:
+    name: API Support
+
 servers:
   - url: https://api.yourdomain.com/v1
-    description: Production server (replace with your URL)
+    description: Production server
+  - url: http://localhost:4000/v1
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: Login, signup, password reset (stateless JWT)
+  - name: Users
+    description: User management operations
+  - name: Roles
+    description: Role management
+  - name: Permissions
+    description: Permission management
+  - name: Groups
+    description: User group management
+  - name: Categories
+    description: Content category management (hierarchical)
+  - name: Tags
+    description: Content tagging
+  - name: Articles
+    description: Article content management
+  - name: Courses
+    description: Course management
+  - name: Sections
+    description: Course section management
+  - name: Lessons
+    description: Lesson management
+  - name: Enrollments
+    description: Course enrollment and progress
+  - name: Comments
+    description: Content comments
+  - name: Reactions
+    description: Content reactions (likes, etc.)
+  - name: Bookmarks
+    description: User bookmarks
+  - name: Tasks
+    description: Workflow tasks
+  - name: Workflows
+    description: Content workflow management
+  - name: Notifications
+    description: User notifications
+  - name: Media
+    description: Media file management
+  - name: Analytics
+    description: Dashboard and content analytics
+  - name: Settings
+    description: System and user settings
+  - name: Search
+    description: Global search
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: |
+        Stateless JWT access token. Token expiry: 15-30 minutes.
+        No refresh tokens - users re-authenticate when expired.
+
   schemas:
-    AuthLogin:
-      type: object
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-    AuthTokenResponse:
+    # ===== COMMON =====
+    ErrorResponse:
       type: object
       properties:
-        token:
-          type: string
-    AuthSignup:
-      type: object
-      required: [name, email, password, status]
-      properties:
-        name:
-          type: string
-        email:
-          type: string
-          format: email
-        password:
-          type: string
         status:
+          type: integer
+        message:
           type: string
-    UserRequest:
-      type: object
-      required: [name, email, status]
-      properties:
-        name:
-          type: string
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-        status:
-          type: string
-    UserResponse:
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    SuccessResponse:
       type: object
       properties:
-        id:
+        success:
+          type: boolean
+        message:
           type: string
-          format: uuid
-        name:
-          type: string
-        email:
-          type: string
-          format: email
-        status:
-          type: string
-        lastLogin:
-          type: string
-          format: date-time
-        createdAt:
-          type: string
-          format: date-time
-    PageResponseUser:
+
+    PageInfo:
       type: object
       properties:
-        content:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserResponse'
         page:
           type: integer
         size:
@@ -89,14 +107,201 @@ components:
           type: integer
         last:
           type: boolean
+
+    # ===== AUTH =====
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT access token (15-30 min expiry)
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    SignupRequest:
+      type: object
+      required: [email, password, firstName, lastName]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        firstName:
+          type: string
+        lastName:
+          type: string
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 6
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+
+    # ===== USERS =====
+    UserStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, PENDING, DEACTIVATED]
+
+    UserRequest:
+      type: object
+      required: [email, firstName, lastName]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        jobTitle:
+          type: string
+        department:
+          type: string
+        bio:
+          type: string
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        roleIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        groupIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        avatarUrl:
+          type: string
+        phone:
+          type: string
+        jobTitle:
+          type: string
+        department:
+          type: string
+        bio:
+          type: string
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        emailVerified:
+          type: boolean
+        lastLogin:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleResponse'
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupBasic'
+
+    UserListResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    InviteUserRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+        roleIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        groupIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    # ===== ROLES =====
     RoleRequest:
       type: object
       required: [name]
       properties:
         name:
           type: string
-        system:
+        description:
+          type: string
+        isSystem:
           type: boolean
+          default: false
+        permissionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
     RoleResponse:
       type: object
       properties:
@@ -105,26 +310,42 @@ components:
           format: uuid
         name:
           type: string
-        system:
+        description:
+          type: string
+        isSystem:
           type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionResponse'
+
+    # ===== PERMISSIONS =====
     PermissionRequest:
       type: object
-      required: [module]
+      required: [module, name]
       properties:
         module:
           type: string
-        view:
+        name:
+          type: string
+        description:
+          type: string
+        viewAccess:
           type: boolean
-        create:
+        createAccess:
           type: boolean
-        edit:
+        editAccess:
           type: boolean
-        delete:
+        deleteAccess:
           type: boolean
-        publish:
+        publishAccess:
           type: boolean
-        manage:
+        manageAccess:
           type: boolean
+
     PermissionResponse:
       type: object
       properties:
@@ -133,18 +354,33 @@ components:
           format: uuid
         module:
           type: string
-        view:
+        name:
+          type: string
+        description:
+          type: string
+        viewAccess:
           type: boolean
-        create:
+        createAccess:
           type: boolean
-        edit:
+        editAccess:
           type: boolean
-        delete:
+        deleteAccess:
           type: boolean
-        publish:
+        publishAccess:
           type: boolean
-        manage:
+        manageAccess:
           type: boolean
+
+    # ===== GROUPS =====
+    GroupBasic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
     GroupRequest:
       type: object
       required: [name]
@@ -153,6 +389,15 @@ components:
           type: string
         description:
           type: string
+        parentId:
+          type: string
+          format: uuid
+        roleIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
     GroupResponse:
       type: object
       properties:
@@ -163,42 +408,1287 @@ components:
           type: string
         description:
           type: string
+        parentId:
+          type: string
+          format: uuid
+        memberCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleResponse'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+
+    # ===== CATEGORIES =====
+    CategoryRequest:
+      type: object
+      required: [name, slug]
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        color:
+          type: string
+        parentId:
+          type: string
+          format: uuid
+        sortOrder:
+          type: integer
+        isActive:
+          type: boolean
+        metaTitle:
+          type: string
+        metaDescription:
+          type: string
+
+    CategoryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        color:
+          type: string
+        parentId:
+          type: string
+          format: uuid
+        sortOrder:
+          type: integer
+        isActive:
+          type: boolean
+        metaTitle:
+          type: string
+        metaDescription:
+          type: string
+        articleCount:
+          type: integer
+        courseCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryResponse'
+
+    # ===== TAGS =====
+    TagRequest:
+      type: object
+      required: [name, slug]
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+
+    TagResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        usageCount:
+          type: integer
+
+    # ===== CONTENT STATUS =====
+    ContentStatus:
+      type: string
+      enum: [draft, pending_review, approved, published, archived, rejected]
+
+    VisibilityType:
+      type: string
+      enum: [public, private, restricted]
+
+    # ===== ARTICLES =====
+    ArticleRequest:
+      type: object
+      required: [title, slug]
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        excerpt:
+          type: string
+        featuredImage:
+          type: string
+        status:
+          $ref: '#/components/schemas/ContentStatus'
+        visibility:
+          $ref: '#/components/schemas/VisibilityType'
+        categoryId:
+          type: string
+          format: uuid
+        scheduledPublishAt:
+          type: string
+          format: date-time
+        isFeatured:
+          type: boolean
+        allowComments:
+          type: boolean
+        tagIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        contentBlocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentBlockRequest'
+        seo:
+          $ref: '#/components/schemas/ArticleSeoRequest'
+
+    ArticleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        excerpt:
+          type: string
+        featuredImage:
+          type: string
+        status:
+          $ref: '#/components/schemas/ContentStatus'
+        visibility:
+          $ref: '#/components/schemas/VisibilityType'
+        categoryId:
+          type: string
+          format: uuid
+        category:
+          $ref: '#/components/schemas/CategoryResponse'
+        author:
+          $ref: '#/components/schemas/UserResponse'
+        publishedAt:
+          type: string
+          format: date-time
+        scheduledPublishAt:
+          type: string
+          format: date-time
+        viewCount:
+          type: integer
+        readingTimeMinutes:
+          type: integer
+        isFeatured:
+          type: boolean
+        allowComments:
+          type: boolean
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        contentBlocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentBlockResponse'
+        seo:
+          $ref: '#/components/schemas/ArticleSeoResponse'
+
+    ArticleListResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArticleResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    ContentBlockRequest:
+      type: object
+      required: [blockType, sortOrder]
+      properties:
+        blockType:
+          type: string
+          enum: [paragraph, heading, code, image, quote, list, divider, callout, video, embed]
+        content:
+          type: string
+        metadata:
+          type: object
+        sortOrder:
+          type: integer
+
+    ContentBlockResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        blockType:
+          type: string
+        content:
+          type: string
+        metadata:
+          type: object
+        sortOrder:
+          type: integer
+
+    ArticleSeoRequest:
+      type: object
+      properties:
+        metaTitle:
+          type: string
+        metaDescription:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        canonicalUrl:
+          type: string
+        ogTitle:
+          type: string
+        ogDescription:
+          type: string
+        ogImage:
+          type: string
+        twitterCard:
+          type: string
+        noIndex:
+          type: boolean
+        noFollow:
+          type: boolean
+
+    ArticleSeoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        metaTitle:
+          type: string
+        metaDescription:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        canonicalUrl:
+          type: string
+        ogTitle:
+          type: string
+        ogDescription:
+          type: string
+        ogImage:
+          type: string
+        twitterCard:
+          type: string
+        noIndex:
+          type: boolean
+        noFollow:
+          type: boolean
+
+    ArticleVersionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        articleId:
+          type: string
+          format: uuid
+        versionNumber:
+          type: integer
+        title:
+          type: string
+        contentSnapshot:
+          type: object
+        changedBy:
+          $ref: '#/components/schemas/UserResponse'
+        changeDescription:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    # ===== COURSES =====
+    DifficultyLevel:
+      type: string
+      enum: [beginner, intermediate, advanced]
+
+    CourseRequest:
+      type: object
+      required: [title, slug]
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        shortDescription:
+          type: string
+        thumbnailUrl:
+          type: string
+        previewVideoUrl:
+          type: string
+        status:
+          $ref: '#/components/schemas/ContentStatus'
+        visibility:
+          $ref: '#/components/schemas/VisibilityType'
+        categoryId:
+          type: string
+          format: uuid
+        difficultyLevel:
+          $ref: '#/components/schemas/DifficultyLevel'
+        estimatedDuration:
+          type: integer
+          description: Duration in minutes
+        isFeatured:
+          type: boolean
+        isCertificateEnabled:
+          type: boolean
+        tagIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    CourseResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        shortDescription:
+          type: string
+        thumbnailUrl:
+          type: string
+        previewVideoUrl:
+          type: string
+        status:
+          $ref: '#/components/schemas/ContentStatus'
+        visibility:
+          $ref: '#/components/schemas/VisibilityType'
+        category:
+          $ref: '#/components/schemas/CategoryResponse'
+        instructor:
+          $ref: '#/components/schemas/UserResponse'
+        difficultyLevel:
+          $ref: '#/components/schemas/DifficultyLevel'
+        estimatedDuration:
+          type: integer
+        isFeatured:
+          type: boolean
+        isCertificateEnabled:
+          type: boolean
+        version:
+          type: integer
+        enrollmentCount:
+          type: integer
+        averageRating:
+          type: number
+        ratingCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionResponse'
+
+    CourseListResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    # ===== SECTIONS =====
+    SectionRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+
+    SectionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        courseId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+        lessonCount:
+          type: integer
+        totalDuration:
+          type: integer
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/LessonResponse'
+
+    # ===== LESSONS =====
+    LessonContentType:
+      type: string
+      enum: [video, text, quiz, assignment]
+
+    LessonRequest:
+      type: object
+      required: [title, contentType]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        contentType:
+          $ref: '#/components/schemas/LessonContentType'
+        content:
+          type: string
+        videoUrl:
+          type: string
+        duration:
+          type: integer
+        sortOrder:
+          type: integer
+        isFree:
+          type: boolean
+
+    LessonResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sectionId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        contentType:
+          $ref: '#/components/schemas/LessonContentType'
+        content:
+          type: string
+        videoUrl:
+          type: string
+        duration:
+          type: integer
+        sortOrder:
+          type: integer
+        isFree:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaResponse'
+
+    # ===== ENROLLMENTS =====
+    EnrollmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        courseId:
+          type: string
+          format: uuid
+        course:
+          $ref: '#/components/schemas/CourseResponse'
+        enrolledAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        progressPercent:
+          type: number
+        lastAccessedAt:
+          type: string
+          format: date-time
+
+    LessonProgressRequest:
+      type: object
+      properties:
+        progressPercent:
+          type: number
+        isCompleted:
+          type: boolean
+        watchedDuration:
+          type: integer
+
+    LessonProgressResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        lessonId:
+          type: string
+          format: uuid
+        progressPercent:
+          type: number
+        isCompleted:
+          type: boolean
+        watchedDuration:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+
+    # ===== COMMENTS =====
+    CommentStatus:
+      type: string
+      enum: [pending, approved, rejected, spam]
+
+    CommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        parentId:
+          type: string
+          format: uuid
+
+    CommentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        contentType:
+          type: string
+          enum: [article, course, lesson]
+        contentId:
+          type: string
+          format: uuid
+        author:
+          $ref: '#/components/schemas/UserResponse'
+        content:
+          type: string
+        status:
+          $ref: '#/components/schemas/CommentStatus'
+        parentId:
+          type: string
+          format: uuid
+        likesCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        replies:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentResponse'
+
+    CommentListResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    # ===== REACTIONS =====
+    ReactionType:
+      type: string
+      enum: [like, love, helpful, insightful]
+
+    ReactionRequest:
+      type: object
+      required: [reactionType]
+      properties:
+        reactionType:
+          $ref: '#/components/schemas/ReactionType'
+
+    ReactionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        reactionType:
+          $ref: '#/components/schemas/ReactionType'
+        createdAt:
+          type: string
+          format: date-time
+
+    ReactionSummary:
+      type: object
+      properties:
+        like:
+          type: integer
+        love:
+          type: integer
+        helpful:
+          type: integer
+        insightful:
+          type: integer
+        userReaction:
+          $ref: '#/components/schemas/ReactionType'
+
+    # ===== BOOKMARKS =====
+    BookmarkRequest:
+      type: object
+      required: [contentType, contentId]
+      properties:
+        contentType:
+          type: string
+          enum: [article, course, lesson]
+        contentId:
+          type: string
+          format: uuid
+        note:
+          type: string
+
+    BookmarkResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        contentType:
+          type: string
+        contentId:
+          type: string
+          format: uuid
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        content:
+          type: object
+          description: The bookmarked content (article, course, or lesson)
+
+    # ===== TASKS =====
+    TaskPriority:
+      type: string
+      enum: [low, medium, high, urgent]
+
+    TaskStatus:
+      type: string
+      enum: [pending, in_progress, completed, cancelled]
+
+    TaskRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        assigneeId:
+          type: string
+          format: uuid
+        dueDate:
+          type: string
+          format: date-time
+        contentType:
+          type: string
+          enum: [article, course]
+        contentId:
+          type: string
+          format: uuid
+        workflowId:
+          type: string
+          format: uuid
+
+    TaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        creator:
+          $ref: '#/components/schemas/UserResponse'
+        assignee:
+          $ref: '#/components/schemas/UserResponse'
+        dueDate:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        contentType:
+          type: string
+        contentId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskNoteResponse'
+
+    TaskNoteRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+
+    TaskNoteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        author:
+          $ref: '#/components/schemas/UserResponse'
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    TaskListResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    # ===== WORKFLOWS =====
+    WorkflowRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        stages:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              order:
+                type: integer
+              requiredApprovals:
+                type: integer
+        isDefault:
+          type: boolean
+
+    WorkflowResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        stages:
+          type: array
+          items:
+            type: object
+        isDefault:
+          type: boolean
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    WorkflowActionRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [submit, approve, reject, request_changes, publish, unpublish]
+        comment:
+          type: string
+
+    # ===== NOTIFICATIONS =====
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        link:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    NotificationListResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationResponse'
+        unreadCount:
+          type: integer
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    # ===== MEDIA =====
+    MediaUploadRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+        folder:
+          type: string
+        altText:
+          type: string
+
+    MediaResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        originalName:
+          type: string
+        mimeType:
+          type: string
+        size:
+          type: integer
+        url:
+          type: string
+        thumbnailUrl:
+          type: string
+        altText:
+          type: string
+        folder:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    MediaListResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    # ===== ANALYTICS =====
+    DashboardAnalytics:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        activeUsers:
+          type: integer
+        totalArticles:
+          type: integer
+        publishedArticles:
+          type: integer
+        totalCourses:
+          type: integer
+        publishedCourses:
+          type: integer
+        totalEnrollments:
+          type: integer
+        pageViews:
+          type: integer
+        userGrowth:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+              count:
+                type: integer
+        topArticles:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArticleResponse'
+        topCourses:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseResponse'
+
+    ContentAnalytics:
+      type: object
+      properties:
+        views:
+          type: integer
+        uniqueViews:
+          type: integer
+        averageTimeOnPage:
+          type: number
+        bounceRate:
+          type: number
+        shares:
+          type: integer
+        comments:
+          type: integer
+        reactions:
+          type: object
+
+    # ===== SETTINGS =====
+    SystemSettingsResponse:
+      type: object
+      properties:
+        siteName:
+          type: string
+        siteDescription:
+          type: string
+        defaultLanguage:
+          type: string
+        maintenanceMode:
+          type: boolean
+        registrationEnabled:
+          type: boolean
+        emailVerificationRequired:
+          type: boolean
+
+    UserPreferencesRequest:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+        language:
+          type: string
+        emailNotifications:
+          type: boolean
+        pushNotifications:
+          type: boolean
+        timezone:
+          type: string
+
+    UserPreferencesResponse:
+      type: object
+      properties:
+        theme:
+          type: string
+        language:
+          type: string
+        emailNotifications:
+          type: boolean
+        pushNotifications:
+          type: boolean
+        timezone:
+          type: string
+
+    # ===== SEARCH =====
+    SearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        types:
+          type: array
+          items:
+            type: string
+            enum: [article, course, user]
+        categoryId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ContentStatus'
+
+    SearchResponse:
+      type: object
+      properties:
+        articles:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArticleResponse'
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseResponse'
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        totalCount:
+          type: integer
+        suggestions:
+          type: array
+          items:
+            type: string
+
+# ===== PATHS =====
 paths:
+  # ----- AUTHENTICATION -----
   /api/auth/signup:
     post:
-      summary: Signup (create user)
+      tags: [Authentication]
+      summary: Register a new user
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthSignup'
+              $ref: '#/components/schemas/SignupRequest'
       responses:
         '201':
-          description: Created
-        '409':
-          description: Conflict (already exists)
-  /api/auth/login:
-    post:
-      summary: Login and get JWT
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AuthLogin'
-      responses:
-        '200':
-          description: Token
+          description: User created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthTokenResponse'
+                $ref: '#/components/schemas/LoginResponse'
+        '409':
+          description: Email already exists
+
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login and get JWT access token
+      description: Returns a short-lived JWT token (15-30 min). No refresh tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+
+  /api/auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Reset email sent (if email exists)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/auth/reset-password:
+    post:
+      tags: [Authentication]
+      summary: Reset password using token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired token
+
+  /api/auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current user info
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
         '401':
           description: Unauthorized
-  /api/users:
+
+  /api/auth/change-password:
     post:
-      summary: Create user
+      tags: [Authentication]
+      summary: Change password (authenticated)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+        '400':
+          description: Current password incorrect
+
+  # ----- USERS -----
+  /api/users:
+    get:
+      tags: [Users]
+      summary: Get paginated list of users
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserStatus'
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: roleId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: groupId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Paginated user list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+
+    post:
+      tags: [Users]
+      summary: Create a new user
       security:
         - bearerAuth: []
       requestBody:
@@ -209,69 +1699,43 @@ paths:
               $ref: '#/components/schemas/UserRequest'
       responses:
         '201':
-          description: Created
+          description: User created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
-    get:
-      summary: Get users (paged)
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-          required: false
-          example: 0
-        - in: query
-          name: size
-          schema:
-            type: integer
-          required: false
-          example: 10
-        - in: query
-          name: status
-          schema:
-            type: string
-        - in: query
-          name: search
-          schema:
-            type: string
-      responses:
-        '200':
-          description: PageResponse
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageResponseUser'
+
   /api/users/{userId}:
     get:
-      summary: Get user by id
+      tags: [Users]
+      summary: Get user by ID
       security:
         - bearerAuth: []
       parameters:
-        - in: path
-          name: userId
+        - name: userId
+          in: path
           required: true
           schema:
             type: string
             format: uuid
       responses:
         '200':
-          description: UserResponse
+          description: User data
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+
     put:
+      tags: [Users]
       summary: Update user
       security:
         - bearerAuth: []
       parameters:
-        - in: path
-          name: userId
+        - name: userId
+          in: path
           required: true
           schema:
             type: string
@@ -284,28 +1748,108 @@ paths:
               $ref: '#/components/schemas/UserRequest'
       responses:
         '200':
-          description: Updated user
+          description: User updated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+
     delete:
+      tags: [Users]
       summary: Delete user
       security:
         - bearerAuth: []
       parameters:
-        - in: path
-          name: userId
+        - name: userId
+          in: path
           required: true
           schema:
             type: string
             format: uuid
       responses:
         '204':
-          description: No Content
-  /api/roles:
+          description: User deleted
+
+  /api/users/{userId}/activate:
     post:
-      summary: Create role
+      tags: [Users]
+      summary: Activate user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /api/users/{userId}/deactivate:
+    post:
+      tags: [Users]
+      summary: Deactivate user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /api/users/{userId}/avatar:
+    post:
+      tags: [Users]
+      summary: Upload user avatar
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Avatar uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+
+  /api/users/invite:
+    post:
+      tags: [Users]
+      summary: Invite a new user
       security:
         - bearerAuth: []
       requestBody:
@@ -313,15 +1857,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RoleRequest'
+              $ref: '#/components/schemas/InviteUserRequest'
       responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoleResponse'
+        '200':
+          description: Invitation sent
+
+  /api/users/{userId}/resend-invitation:
+    post:
+      tags: [Users]
+      summary: Resend invitation email
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invitation resent
+
+  # ----- ROLES -----
+  /api/roles:
     get:
+      tags: [Roles]
       summary: Get all roles
       security:
         - bearerAuth: []
@@ -334,31 +1895,55 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RoleResponse'
+
+    post:
+      tags: [Roles]
+      summary: Create role
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+      responses:
+        '201':
+          description: Role created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+
   /api/roles/{roleId}:
     get:
-      summary: Get role by id
+      tags: [Roles]
+      summary: Get role by ID
       security:
         - bearerAuth: []
       parameters:
-        - in: path
-          name: roleId
+        - name: roleId
+          in: path
           required: true
           schema:
             type: string
             format: uuid
       responses:
         '200':
+          description: Role data
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoleResponse'
+
     put:
+      tags: [Roles]
       summary: Update role
       security:
         - bearerAuth: []
       parameters:
-        - in: path
-          name: roleId
+        - name: roleId
+          in: path
           required: true
           schema:
             type: string
@@ -371,19 +1956,98 @@ paths:
               $ref: '#/components/schemas/RoleRequest'
       responses:
         '200':
+          description: Role updated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoleResponse'
+
     delete:
+      tags: [Roles]
       summary: Delete role
       security:
         - bearerAuth: []
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
-          description: No Content
+          description: Role deleted
+
+  /api/roles/{roleId}/permissions:
+    get:
+      tags: [Roles]
+      summary: Get role permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Role permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PermissionResponse'
+
+    put:
+      tags: [Roles]
+      summary: Update role permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                permissionIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '200':
+          description: Permissions updated
+
+  # ----- PERMISSIONS -----
   /api/permissions:
+    get:
+      tags: [Permissions]
+      summary: Get all permissions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PermissionResponse'
+
     post:
+      tags: [Permissions]
       summary: Create permission
       security:
         - bearerAuth: []
@@ -395,47 +2059,41 @@ paths:
               $ref: '#/components/schemas/PermissionRequest'
       responses:
         '201':
+          description: Permission created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PermissionResponse'
-    get:
-      summary: Get all permissions
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PermissionResponse'
+
   /api/permissions/{permissionId}:
     get:
-      summary: Get permission by id
+      tags: [Permissions]
+      summary: Get permission by ID
       security:
         - bearerAuth: []
       parameters:
-        - in: path
-          name: permissionId
+        - name: permissionId
+          in: path
           required: true
           schema:
             type: string
             format: uuid
       responses:
         '200':
+          description: Permission data
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PermissionResponse'
+
     put:
+      tags: [Permissions]
       summary: Update permission
       security:
         - bearerAuth: []
       parameters:
-        - in: path
-          name: permissionId
+        - name: permissionId
+          in: path
           required: true
           schema:
             type: string
@@ -448,98 +2106,56 @@ paths:
               $ref: '#/components/schemas/PermissionRequest'
       responses:
         '200':
+          description: Permission updated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PermissionResponse'
+
     delete:
+      tags: [Permissions]
       summary: Delete permission
       security:
         - bearerAuth: []
-      responses:
-        '204':
-          description: No Content
-  /api/role-permissions/roles/{roleId}/permissions/{permissionId}:
-    post:
-      summary: Assign permission to role
-      security:
-        - bearerAuth: []
       parameters:
-        - in: path
-          name: roleId
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - in: path
-          name: permissionId
+        - name: permissionId
+          in: path
           required: true
           schema:
             type: string
             format: uuid
       responses:
         '204':
-          description: No Content
-    delete:
-      summary: Remove permission from role
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: roleId
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - in: path
-          name: permissionId
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: No Content
-  /api/role-permissions/roles/{roleId}/permissions:
-    get:
-      summary: Get permissions by role
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: roleId
-          required: true
-      responses:
-        '200':
-          description: list of permission ids
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  format: uuid
-  /api/role-permissions/permissions/{permissionId}/roles:
-    get:
-      summary: Get roles by permission
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: permissionId
-          required: true
-      responses:
-        '200':
-          description: list of role ids
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  format: uuid
+          description: Permission deleted
+
+  # ----- GROUPS -----
   /api/groups:
+    get:
+      tags: [Groups]
+      summary: Get all groups
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: size
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupResponse'
+
     post:
+      tags: [Groups]
       summary: Create group
       security:
         - bearerAuth: []
@@ -551,44 +2167,45 @@ paths:
               $ref: '#/components/schemas/GroupRequest'
       responses:
         '201':
+          description: Group created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GroupResponse'
-    get:
-      summary: Get all groups
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/GroupResponse'
+
   /api/groups/{groupId}:
     get:
-      summary: Get group by id
+      tags: [Groups]
+      summary: Get group by ID
       security:
         - bearerAuth: []
       parameters:
-        - in: path
-          name: groupId
+        - name: groupId
+          in: path
           required: true
           schema:
             type: string
             format: uuid
       responses:
         '200':
+          description: Group data
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GroupResponse'
+
     put:
+      tags: [Groups]
       summary: Update group
       security:
         - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -597,107 +2214,2180 @@ paths:
               $ref: '#/components/schemas/GroupRequest'
       responses:
         '200':
+          description: Group updated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GroupResponse'
+
     delete:
+      tags: [Groups]
       summary: Delete group
       security:
         - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
-          description: No Content
-  /api/group-roles/groups/{groupId}/roles/{roleId}:
-    post:
-      summary: Assign role to group
-      security:
-        - bearerAuth: []
-      responses:
-        '204':
-          description: No Content
-    delete:
-      summary: Remove role from group
-      security:
-        - bearerAuth: []
-      responses:
-        '204':
-          description: No Content
-  /api/group-roles/groups/{groupId}/roles:
-    get:
-      summary: Get roles by group
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: list of role ids
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  format: uuid
-  /api/group-roles/roles/{roleId}/groups:
-    get:
-      summary: Get groups by role
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: list of group ids
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  format: uuid
-  /api/user-groups/users/{userId}/groups/{groupId}:
-    post:
-      summary: Add user to group
-      security:
-        - bearerAuth: []
-      responses:
-        '204':
-          description: No Content
-    delete:
-      summary: Remove user from group
-      security:
-        - bearerAuth: []
-      responses:
-        '204':
-          description: No Content
-  /api/user-groups/users/{userId}/groups:
-    get:
-      summary: Get groups for user
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: list of group ids
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  format: uuid
-  /api/user-groups/groups/{groupId}/users:
-    get:
-      summary: Get users for group
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: list of user ids
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  format: uuid
-security:
-  - bearerAuth: []
+          description: Group deleted
 
+  /api/groups/{groupId}/members:
+    get:
+      tags: [Groups]
+      summary: Get group members
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Group members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+
+    post:
+      tags: [Groups]
+      summary: Add members to group
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '200':
+          description: Members added
+
+  /api/groups/{groupId}/members/{userId}:
+    delete:
+      tags: [Groups]
+      summary: Remove member from group
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Member removed
+
+  # ----- CATEGORIES -----
+  /api/categories:
+    get:
+      tags: [Categories]
+      summary: Get categories (tree structure)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: flat
+          in: query
+          schema:
+            type: boolean
+          description: Return flat list instead of tree
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Category tree
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryResponse'
+
+    post:
+      tags: [Categories]
+      summary: Create category
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+
+  /api/categories/{categoryId}:
+    get:
+      tags: [Categories]
+      summary: Get category by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Category data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+
+    put:
+      tags: [Categories]
+      summary: Update category
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+
+    delete:
+      tags: [Categories]
+      summary: Delete category
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Category deleted
+
+  /api/categories/{categoryId}/move:
+    post:
+      tags: [Categories]
+      summary: Move category to new parent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newParentId:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        '200':
+          description: Category moved
+
+  /api/categories/reorder:
+    post:
+      tags: [Categories]
+      summary: Reorder categories
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      sortOrder:
+                        type: integer
+      responses:
+        '200':
+          description: Categories reordered
+
+  # ----- TAGS -----
+  /api/tags:
+    get:
+      tags: [Tags]
+      summary: Get all tags
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagResponse'
+
+    post:
+      tags: [Tags]
+      summary: Create tag
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+      responses:
+        '201':
+          description: Tag created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+
+  /api/tags/{tagId}:
+    get:
+      tags: [Tags]
+      summary: Get tag by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tag data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+
+    put:
+      tags: [Tags]
+      summary: Update tag
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+      responses:
+        '200':
+          description: Tag updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+
+    delete:
+      tags: [Tags]
+      summary: Delete tag
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Tag deleted
+
+  # ----- ARTICLES -----
+  /api/articles:
+    get:
+      tags: [Articles]
+      summary: Get paginated articles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: size
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ContentStatus'
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: authorId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: isFeatured
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Paginated articles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleListResponse'
+
+    post:
+      tags: [Articles]
+      summary: Create article
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleRequest'
+      responses:
+        '201':
+          description: Article created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleResponse'
+
+  /api/articles/{articleId}:
+    get:
+      tags: [Articles]
+      summary: Get article by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Article data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleResponse'
+
+    put:
+      tags: [Articles]
+      summary: Update article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleRequest'
+      responses:
+        '200':
+          description: Article updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleResponse'
+
+    delete:
+      tags: [Articles]
+      summary: Delete article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Article deleted
+
+  /api/articles/{articleId}/duplicate:
+    post:
+      tags: [Articles]
+      summary: Duplicate article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Article duplicated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleResponse'
+
+  /api/articles/{articleId}/versions:
+    get:
+      tags: [Articles]
+      summary: Get article versions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Article versions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArticleVersionResponse'
+
+  /api/articles/{articleId}/versions/{versionId}/restore:
+    post:
+      tags: [Articles]
+      summary: Restore article version
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: versionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Version restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleResponse'
+
+  /api/articles/{articleId}/workflow:
+    post:
+      tags: [Articles]
+      summary: Perform workflow action on article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowActionRequest'
+      responses:
+        '200':
+          description: Workflow action performed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleResponse'
+
+  /api/articles/{articleId}/comments:
+    get:
+      tags: [Comments]
+      summary: Get article comments
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: size
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Article comments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentListResponse'
+
+    post:
+      tags: [Comments]
+      summary: Add comment to article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+      responses:
+        '201':
+          description: Comment added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+
+  /api/articles/{articleId}/reactions:
+    get:
+      tags: [Reactions]
+      summary: Get article reactions
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reaction summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactionSummary'
+
+    post:
+      tags: [Reactions]
+      summary: Add reaction to article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReactionRequest'
+      responses:
+        '201':
+          description: Reaction added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactionResponse'
+
+    delete:
+      tags: [Reactions]
+      summary: Remove reaction from article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Reaction removed
+
+  # ----- COURSES -----
+  /api/courses:
+    get:
+      tags: [Courses]
+      summary: Get paginated courses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: size
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ContentStatus'
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: instructorId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: difficulty
+          in: query
+          schema:
+            $ref: '#/components/schemas/DifficultyLevel'
+        - name: isFeatured
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Paginated courses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseListResponse'
+
+    post:
+      tags: [Courses]
+      summary: Create course
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+      responses:
+        '201':
+          description: Course created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+
+  /api/courses/{courseId}:
+    get:
+      tags: [Courses]
+      summary: Get course by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Course data with sections and lessons
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+
+    put:
+      tags: [Courses]
+      summary: Update course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+      responses:
+        '200':
+          description: Course updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+
+    delete:
+      tags: [Courses]
+      summary: Delete course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Course deleted
+
+  /api/courses/{courseId}/duplicate:
+    post:
+      tags: [Courses]
+      summary: Duplicate course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Course duplicated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+
+  /api/courses/{courseId}/workflow:
+    post:
+      tags: [Courses]
+      summary: Perform workflow action on course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowActionRequest'
+      responses:
+        '200':
+          description: Workflow action performed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+
+  # ----- SECTIONS -----
+  /api/courses/{courseId}/sections:
+    get:
+      tags: [Sections]
+      summary: Get course sections
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Course sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SectionResponse'
+
+    post:
+      tags: [Sections]
+      summary: Create section
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectionRequest'
+      responses:
+        '201':
+          description: Section created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionResponse'
+
+  /api/courses/{courseId}/sections/{sectionId}:
+    get:
+      tags: [Sections]
+      summary: Get section by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Section data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionResponse'
+
+    put:
+      tags: [Sections]
+      summary: Update section
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectionRequest'
+      responses:
+        '200':
+          description: Section updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionResponse'
+
+    delete:
+      tags: [Sections]
+      summary: Delete section
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Section deleted
+
+  /api/courses/{courseId}/sections/reorder:
+    post:
+      tags: [Sections]
+      summary: Reorder sections
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      sortOrder:
+                        type: integer
+      responses:
+        '200':
+          description: Sections reordered
+
+  # ----- LESSONS -----
+  /api/sections/{sectionId}/lessons:
+    get:
+      tags: [Lessons]
+      summary: Get section lessons
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Section lessons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LessonResponse'
+
+    post:
+      tags: [Lessons]
+      summary: Create lesson
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LessonRequest'
+      responses:
+        '201':
+          description: Lesson created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonResponse'
+
+  /api/lessons/{lessonId}:
+    get:
+      tags: [Lessons]
+      summary: Get lesson by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lesson data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonResponse'
+
+    put:
+      tags: [Lessons]
+      summary: Update lesson
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LessonRequest'
+      responses:
+        '200':
+          description: Lesson updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonResponse'
+
+    delete:
+      tags: [Lessons]
+      summary: Delete lesson
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Lesson deleted
+
+  /api/sections/{sectionId}/lessons/reorder:
+    post:
+      tags: [Lessons]
+      summary: Reorder lessons
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      sortOrder:
+                        type: integer
+      responses:
+        '200':
+          description: Lessons reordered
+
+  # ----- ENROLLMENTS -----
+  /api/enrollments:
+    get:
+      tags: [Enrollments]
+      summary: Get my enrollments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: size
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, completed]
+      responses:
+        '200':
+          description: User enrollments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EnrollmentResponse'
+
+  /api/courses/{courseId}/enroll:
+    post:
+      tags: [Enrollments]
+      summary: Enroll in course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Enrolled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponse'
+
+  /api/courses/{courseId}/unenroll:
+    post:
+      tags: [Enrollments]
+      summary: Unenroll from course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Unenrolled successfully
+
+  /api/lessons/{lessonId}/progress:
+    get:
+      tags: [Enrollments]
+      summary: Get lesson progress
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lesson progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonProgressResponse'
+
+    put:
+      tags: [Enrollments]
+      summary: Update lesson progress
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LessonProgressRequest'
+      responses:
+        '200':
+          description: Progress updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonProgressResponse'
+
+  /api/lessons/{lessonId}/complete:
+    post:
+      tags: [Enrollments]
+      summary: Mark lesson complete
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lesson marked complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonProgressResponse'
+
+  # ----- COMMENTS -----
+  /api/comments/{commentId}:
+    put:
+      tags: [Comments]
+      summary: Update comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+      responses:
+        '200':
+          description: Comment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+
+    delete:
+      tags: [Comments]
+      summary: Delete comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Comment deleted
+
+  /api/comments/{commentId}/moderate:
+    post:
+      tags: [Comments]
+      summary: Moderate comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  $ref: '#/components/schemas/CommentStatus'
+      responses:
+        '200':
+          description: Comment moderated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+
+  # ----- BOOKMARKS -----
+  /api/bookmarks:
+    get:
+      tags: [Bookmarks]
+      summary: Get my bookmarks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: contentType
+          in: query
+          schema:
+            type: string
+            enum: [article, course, lesson]
+      responses:
+        '200':
+          description: User bookmarks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookmarkResponse'
+
+    post:
+      tags: [Bookmarks]
+      summary: Add bookmark
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookmarkRequest'
+      responses:
+        '201':
+          description: Bookmark added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookmarkResponse'
+
+  /api/bookmarks/{bookmarkId}:
+    delete:
+      tags: [Bookmarks]
+      summary: Remove bookmark
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bookmarkId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Bookmark removed
+
+  # ----- TASKS -----
+  /api/tasks:
+    get:
+      tags: [Tasks]
+      summary: Get tasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: size
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TaskStatus'
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/TaskPriority'
+        - name: assigneeId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: myTasks
+          in: query
+          schema:
+            type: boolean
+          description: Filter to only tasks assigned to me
+      responses:
+        '200':
+          description: Task list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskListResponse'
+
+    post:
+      tags: [Tasks]
+      summary: Create task
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRequest'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+
+  /api/tasks/{taskId}:
+    get:
+      tags: [Tasks]
+      summary: Get task by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+
+    put:
+      tags: [Tasks]
+      summary: Update task
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRequest'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+
+    delete:
+      tags: [Tasks]
+      summary: Delete task
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Task deleted
+
+  /api/tasks/{taskId}/notes:
+    get:
+      tags: [Tasks]
+      summary: Get task notes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskNoteResponse'
+
+    post:
+      tags: [Tasks]
+      summary: Add note to task
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskNoteRequest'
+      responses:
+        '201':
+          description: Note added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskNoteResponse'
+
+  /api/tasks/stats:
+    get:
+      tags: [Tasks]
+      summary: Get task statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Task stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pending:
+                    type: integer
+                  inProgress:
+                    type: integer
+                  completed:
+                    type: integer
+                  overdue:
+                    type: integer
+
+  # ----- WORKFLOWS -----
+  /api/workflows:
+    get:
+      tags: [Workflows]
+      summary: Get all workflows
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Workflow list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkflowResponse'
+
+    post:
+      tags: [Workflows]
+      summary: Create workflow
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowRequest'
+      responses:
+        '201':
+          description: Workflow created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowResponse'
+
+  /api/workflows/{workflowId}:
+    get:
+      tags: [Workflows]
+      summary: Get workflow by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Workflow data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowResponse'
+
+    put:
+      tags: [Workflows]
+      summary: Update workflow
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowRequest'
+      responses:
+        '200':
+          description: Workflow updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowResponse'
+
+    delete:
+      tags: [Workflows]
+      summary: Delete workflow
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Workflow deleted
+
+  # ----- NOTIFICATIONS -----
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: Get my notifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: size
+          in: query
+          schema:
+            type: integer
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+
+  /api/notifications/{notificationId}/read:
+    post:
+      tags: [Notifications]
+      summary: Mark notification as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked read
+
+  /api/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked read
+
+  /api/notifications/{notificationId}:
+    delete:
+      tags: [Notifications]
+      summary: Delete notification
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Notification deleted
+
+  /api/notifications/clear-all:
+    post:
+      tags: [Notifications]
+      summary: Clear all notifications
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: All notifications cleared
+
+  # ----- MEDIA -----
+  /api/media:
+    get:
+      tags: [Media]
+      summary: Get media files
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: size
+          in: query
+          schema:
+            type: integer
+        - name: folder
+          in: query
+          schema:
+            type: string
+        - name: mimeType
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Media list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaListResponse'
+
+    post:
+      tags: [Media]
+      summary: Upload media file
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                folder:
+                  type: string
+                altText:
+                  type: string
+      responses:
+        '201':
+          description: File uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaResponse'
+
+  /api/media/{mediaId}:
+    get:
+      tags: [Media]
+      summary: Get media by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Media data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaResponse'
+
+    put:
+      tags: [Media]
+      summary: Update media metadata
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                altText:
+                  type: string
+                folder:
+                  type: string
+      responses:
+        '200':
+          description: Media updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaResponse'
+
+    delete:
+      tags: [Media]
+      summary: Delete media
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Media deleted
+
+  # ----- ANALYTICS -----
+  /api/analytics/dashboard:
+    get:
+      tags: [Analytics]
+      summary: Get dashboard analytics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Dashboard analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardAnalytics'
+
+  /api/articles/{articleId}/analytics:
+    get:
+      tags: [Analytics]
+      summary: Get article analytics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Article analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAnalytics'
+
+  /api/courses/{courseId}/analytics:
+    get:
+      tags: [Analytics]
+      summary: Get course analytics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Course analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAnalytics'
+
+  # ----- SETTINGS -----
+  /api/settings/system:
+    get:
+      tags: [Settings]
+      summary: Get system settings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettingsResponse'
+
+    put:
+      tags: [Settings]
+      summary: Update system settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemSettingsResponse'
+      responses:
+        '200':
+          description: Settings updated
+
+  /api/settings/preferences:
+    get:
+      tags: [Settings]
+      summary: Get user preferences
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferencesResponse'
+
+    put:
+      tags: [Settings]
+      summary: Update user preferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferencesRequest'
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferencesResponse'
+
+  # ----- SEARCH -----
+  /api/search:
+    get:
+      tags: [Search]
+      summary: Global search
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: types
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [article, course, user]
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: size
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  /api/search/suggestions:
+    get:
+      tags: [Search]
+      summary: Get search suggestions
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
