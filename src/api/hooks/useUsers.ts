@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { userService } from '../services/userService';
-import { UserResponse, UserRequest, UserDto } from '../types';
+import { userService, UserQueryParams } from '../services/userService';
+import { UserResponse, UserDto } from '../types';
 import { AxiosError } from 'axios';
 
 // Helper to map UserDto to UserResponse for backwards compatibility
@@ -24,11 +24,8 @@ interface UseUsersReturn {
   currentPage: number;
   isLoading: boolean;
   error: string | null;
-  fetchUsers: (params?: { page?: number; size?: number }) => Promise<void>;
+  fetchUsers: (params?: UserQueryParams) => Promise<void>;
   getUser: (userId: string) => Promise<UserResponse | null>;
-  createUser: (data: UserRequest) => Promise<UserResponse | null>;
-  updateUser: (userId: string, data: UserRequest) => Promise<UserResponse | null>;
-  deleteUser: (userId: string) => Promise<boolean>;
   clearError: () => void;
 }
 
@@ -40,16 +37,15 @@ export const useUsers = (): UseUsersReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Note: User list endpoint not available in current API - returns empty
-  const fetchUsers = useCallback(async (params?: { page?: number; size?: number }) => {
+  const fetchUsers = useCallback(async (params?: UserQueryParams) => {
     setIsLoading(true);
     setError(null);
     try {
-      // User list endpoint not in current API spec
-      setUsers([]);
-      setTotalElements(0);
-      setTotalPages(0);
-      setCurrentPage(params?.page ?? 0);
+      const data = await userService.getUsers(params);
+      setUsers(data.items.map(mapUserDtoToResponse));
+      setTotalElements(data.totalElements);
+      setTotalPages(Math.ceil(data.totalElements / (params?.size || 10)));
+      setCurrentPage(data.page);
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       setError(axiosError.response?.data?.message || 'Failed to fetch users');
@@ -73,27 +69,6 @@ export const useUsers = (): UseUsersReturn => {
     }
   }, []);
 
-  // Stub - not available in current API
-  const createUser = useCallback(async (data: UserRequest): Promise<UserResponse | null> => {
-    setError('Create user operation not available in current API');
-    return null;
-  }, []);
-
-  // Stub - not available in current API
-  const updateUser = useCallback(
-    async (userId: string, data: UserRequest): Promise<UserResponse | null> => {
-      setError('Update user operation not available in current API');
-      return null;
-    },
-    []
-  );
-
-  // Stub - not available in current API
-  const deleteUser = useCallback(async (userId: string): Promise<boolean> => {
-    setError('Delete user operation not available in current API');
-    return false;
-  }, []);
-
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -107,9 +82,6 @@ export const useUsers = (): UseUsersReturn => {
     error,
     fetchUsers,
     getUser,
-    createUser,
-    updateUser,
-    deleteUser,
     clearError,
   };
 };

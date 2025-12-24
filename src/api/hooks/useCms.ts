@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cmsService, CmsQueryParams } from '../services/cmsService';
-import { CmsCreateDto, CmsSubmitRequest, CmsSendBackRequest } from '../types';
+import { CmsCreateDto, CmsUpdateDto, CmsSubmitRequest, CmsPublishRequest, CmsSendBackRequest } from '../types';
 
 // Query keys
 export const cmsKeys = {
@@ -28,6 +28,22 @@ export const useCreateCms = () => {
   return useMutation({
     mutationFn: (data: CmsCreateDto) => cmsService.create(data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cmsKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to update CMS metadata
+ */
+export const useUpdateCms = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CmsUpdateDto }) => 
+      cmsService.update(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: cmsKeys.all });
     },
   });
@@ -70,6 +86,23 @@ export const useSubmitCmsForReview = () => {
       cmsService.submitForReview(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: cmsKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to publish CMS item (admin only)
+ */
+export const usePublishCms = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CmsPublishRequest }) => 
+      cmsService.publish(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: cmsKeys.all });
     },
   });
 };
@@ -85,6 +118,7 @@ export const useSendCmsBack = () => {
       cmsService.sendBack(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: cmsKeys.all });
     },
   });
 };

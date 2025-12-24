@@ -92,7 +92,7 @@ export default function ArticleCreator() {
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
   const { data: groupsData, isLoading: groupsLoading } = useGroupsQuery();
   
-  const categories = categoriesData?.items || [];
+  const categories = categoriesData || [];
   const groups = groupsData?.items || [];
   
   const existingArticle = editId ? articles.find(a => a.id === editId) : null;

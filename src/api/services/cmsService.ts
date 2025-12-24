@@ -2,9 +2,11 @@ import apiClient from '../client';
 import {
   ApiResponse,
   CmsCreateDto,
+  CmsUpdateDto,
   CmsResponseDto,
   CmsPagedResponse,
   CmsSubmitRequest,
+  CmsPublishRequest,
   CmsSendBackRequest,
   StoredFileInfo,
 } from '../types';
@@ -28,7 +30,7 @@ export const cmsService = {
         size: params?.size ?? 10,
       },
     });
-    return response.data.data || { items: [], total: 0, currentPage: 0, pageSize: 10 };
+    return response.data.data || { items: [], totalElements: 0, page: 0, size: 10 };
   },
 
   /**
@@ -37,6 +39,15 @@ export const cmsService = {
    */
   create: async (data: CmsCreateDto): Promise<CmsResponseDto> => {
     const response = await apiClient.post<ApiResponse<CmsResponseDto>>(CMS_BASE, data);
+    return response.data.data!;
+  },
+
+  /**
+   * Update CMS metadata (title, description)
+   * PUT /api/cms/:id
+   */
+  update: async (id: number, data: CmsUpdateDto): Promise<CmsResponseDto> => {
+    const response = await apiClient.put<ApiResponse<CmsResponseDto>>(`${CMS_BASE}/${id}`, data);
     return response.data.data!;
   },
 
@@ -79,6 +90,18 @@ export const cmsService = {
   submitForReview: async (id: number, data: CmsSubmitRequest): Promise<CmsResponseDto> => {
     const response = await apiClient.post<ApiResponse<CmsResponseDto>>(
       `${CMS_BASE}/${id}/submit`,
+      data
+    );
+    return response.data.data!;
+  },
+
+  /**
+   * Publish CMS item (admin only)
+   * POST /api/cms/:id/publish
+   */
+  publish: async (id: number, data: CmsPublishRequest): Promise<CmsResponseDto> => {
+    const response = await apiClient.post<ApiResponse<CmsResponseDto>>(
+      `${CMS_BASE}/${id}/publish`,
       data
     );
     return response.data.data!;

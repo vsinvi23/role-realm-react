@@ -1,8 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupService, GroupQueryParams } from '../services/groupService';
-import { groupRoleService } from '../services/groupRoleService';
-import { userGroupService } from '../services/userGroupService';
 import { GroupCreateDto, GroupResponseDto } from '../types';
 import { AxiosError } from 'axios';
 
@@ -77,17 +75,7 @@ interface UseGroupsReturn {
   fetchGroups: () => Promise<void>;
   getGroup: (groupId: string) => Promise<LegacyGroupResponse | null>;
   createGroup: (data: GroupCreateDto) => Promise<LegacyGroupResponse | null>;
-  updateGroup: (groupId: string, data: GroupCreateDto) => Promise<LegacyGroupResponse | null>;
   deleteGroup: (groupId: string) => Promise<boolean>;
-  // Role-Group mappings
-  getRolesByGroup: (groupId: string) => Promise<string[]>;
-  assignRoleToGroup: (groupId: string, roleId: string) => Promise<boolean>;
-  removeRoleFromGroup: (groupId: string, roleId: string) => Promise<boolean>;
-  // User-Group memberships
-  getUsersByGroup: (groupId: string) => Promise<string[]>;
-  getGroupsByUser: (userId: string) => Promise<string[]>;
-  addUserToGroup: (userId: string, groupId: string) => Promise<boolean>;
-  removeUserFromGroup: (userId: string, groupId: string) => Promise<boolean>;
   clearError: () => void;
 }
 
@@ -105,7 +93,7 @@ const mapToLegacy = (dto: GroupResponseDto): LegacyGroupResponse => ({
 });
 
 /**
- * Legacy hook for backward compatibility with Roles.tsx
+ * Legacy hook for backward compatibility
  */
 export const useGroups = (): UseGroupsReturn => {
   const [groups, setGroups] = useState<LegacyGroupResponse[]>([]);
@@ -158,14 +146,6 @@ export const useGroups = (): UseGroupsReturn => {
     }
   }, []);
 
-  const updateGroup = useCallback(
-    async (groupId: string, data: GroupCreateDto): Promise<LegacyGroupResponse | null> => {
-      setError('Update group operation not available in current API');
-      return null;
-    },
-    []
-  );
-
   const deleteGroup = useCallback(async (groupId: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
@@ -182,80 +162,6 @@ export const useGroups = (): UseGroupsReturn => {
     }
   }, []);
 
-  // Role-Group mappings
-  const getRolesByGroup = useCallback(async (groupId: string): Promise<string[]> => {
-    try {
-      return await groupRoleService.getRolesByGroup(groupId);
-    } catch {
-      return [];
-    }
-  }, []);
-
-  const assignRoleToGroup = useCallback(
-    async (groupId: string, roleId: string): Promise<boolean> => {
-      try {
-        await groupRoleService.assignRoleToGroup(groupId, roleId);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    []
-  );
-
-  const removeRoleFromGroup = useCallback(
-    async (groupId: string, roleId: string): Promise<boolean> => {
-      try {
-        await groupRoleService.removeRoleFromGroup(groupId, roleId);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    []
-  );
-
-  // User-Group memberships
-  const getUsersByGroup = useCallback(async (groupId: string): Promise<string[]> => {
-    try {
-      return await userGroupService.getUsersByGroup(groupId);
-    } catch {
-      return [];
-    }
-  }, []);
-
-  const getGroupsByUser = useCallback(async (userId: string): Promise<string[]> => {
-    try {
-      return await userGroupService.getGroupsByUser(userId);
-    } catch {
-      return [];
-    }
-  }, []);
-
-  const addUserToGroup = useCallback(
-    async (userId: string, groupId: string): Promise<boolean> => {
-      try {
-        await userGroupService.addUserToGroup(userId, groupId);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    []
-  );
-
-  const removeUserFromGroup = useCallback(
-    async (userId: string, groupId: string): Promise<boolean> => {
-      try {
-        await userGroupService.removeUserFromGroup(userId, groupId);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    []
-  );
-
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -267,15 +173,7 @@ export const useGroups = (): UseGroupsReturn => {
     fetchGroups,
     getGroup,
     createGroup,
-    updateGroup,
     deleteGroup,
-    getRolesByGroup,
-    assignRoleToGroup,
-    removeRoleFromGroup,
-    getUsersByGroup,
-    getGroupsByUser,
-    addUserToGroup,
-    removeUserFromGroup,
     clearError,
   };
 };
