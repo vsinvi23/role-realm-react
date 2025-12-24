@@ -34,12 +34,14 @@ export default function CourseManagement() {
   const { data: cmsData, isLoading, error } = useCmsList({ page, size: pageSize });
 
   // Filter for courses only and apply search
-  const courses = (cmsData?.items || []).filter(
-    (item: CmsResponseDto) => 
-      item.type === 'COURSE' && 
-      (item.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-       item.description?.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const q = searchQuery.trim().toLowerCase();
+  const courses = (cmsData?.items || []).filter((item: CmsResponseDto) => {
+    if (item.type !== 'COURSE') return false;
+    if (!q) return true;
+    const title = (item.title ?? '').toLowerCase();
+    const desc = (item.description ?? '').toLowerCase();
+    return title.includes(q) || desc.includes(q);
+  });
 
   const totalPages = Math.ceil((cmsData?.total || 0) / pageSize);
 
