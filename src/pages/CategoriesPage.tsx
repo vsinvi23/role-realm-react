@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FolderTree, Plus, Trash2, Loader2, Pencil, ChevronRight, ChevronDown } from 'lucide-react';
+import { FolderTree, Plus, Trash2, Loader2, Pencil, ChevronRight, ChevronDown, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
   AlertDialog, 
@@ -32,9 +32,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/api/hooks/useCategories';
+import { useCategoriesPaged, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/api/hooks/useCategories';
 import { CategoryResponseDto, CategoryCreateDto } from '@/api/types';
 import { cn } from '@/lib/utils';
+
+// Build a tree structure from flat items with parentId references
+const buildCategoryTree = (items: CategoryResponseDto[]): CategoryResponseDto[] => {
+  const itemMap = new Map<number, CategoryResponseDto>();
+  const roots: CategoryResponseDto[] = [];
+
+  // First pass: create a map of all items with empty children arrays
+  items.forEach(item => {
+    itemMap.set(item.id, { ...item, children: [] });
+  });
+
+  // Second pass: build the tree
+  items.forEach(item => {
+    const node = itemMap.get(item.id)!;
+    if (item.parentId === null || item.parentId === undefined) {
+      roots.push(node);
+    } else {
+      const parent = itemMap.get(item.parentId);
+      if (parent) {
+        parent.children = parent.children || [];
+        parent.children.push(node);
+      } else {
+        // Orphan item (parent not found), treat as root
+        roots.push(node);
+      }
+    }
+  });
+
+  return roots;
+};
 
 // Flatten categories for parent selection dropdown
 const flattenCategories = (categories: CategoryResponseDto[], prefix = ''): { id: number; name: string }[] => {
@@ -79,7 +109,7 @@ function CategoryItem({ category, level, expandedIds, onToggle, onEdit, onDelete
     <div>
       <div 
         className={cn(
-          "flex items-center gap-2 py-2 px-3 hover:bg-muted/50 rounded-md group",
+          "flex items-center gap-2 py-2 px-3 hover:bg-muted/50 rounded-md group transition-colors",
           level > 0 && "ml-6"
         )}
       >
@@ -108,13 +138,13 @@ function CategoryItem({ category, level, expandedIds, onToggle, onEdit, onDelete
         )}
 
         <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddChild(category.id)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddChild(category.id)} title="Add child category">
             <Plus className="w-3 h-3" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(category)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(category)} title="Edit category">
             <Pencil className="w-3 h-3" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(category)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(category)} title="Delete category">
             <Trash2 className="w-3 h-3 text-destructive" />
           </Button>
         </div>
@@ -141,10 +171,18 @@ function CategoryItem({ category, level, expandedIds, onToggle, onEdit, onDelete
 }
 
 export default function CategoriesPage() {
-  const { data: categories = [], isLoading, refetch } = useCategories();
+  const [page, setPage] = useState(0);
+  const size = 100; // Fetch all for tree view
+  
+  const { data: pagedData, isLoading, refetch } = useCategoriesPaged({ page, size });
   const createMutation = useCreateCategory();
   const updateMutation = useUpdateCategory();
   const deleteMutation = useDeleteCategory();
+
+  // Build tree from flat items
+  const flatItems = pagedData?.items || [];
+  const categories = buildCategoryTree(flatItems);
+  const totalCount = pagedData?.totalElements || flatItems.length;
 
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [formOpen, setFormOpen] = useState(false);
@@ -175,6 +213,15 @@ export default function CategoriesPage() {
       }
       return next;
     });
+  };
+
+  const expandAll = () => {
+    const allIds = new Set(flatItems.map(c => c.id));
+    setExpandedIds(allIds);
+  };
+
+  const collapseAll = () => {
+    setExpandedIds(new Set());
   };
 
   const handleOpenCreate = (defaultParentId: number | null = null) => {
@@ -238,12 +285,6 @@ export default function CategoriesPage() {
     }
   };
 
-  const countCategories = (cats: CategoryResponseDto[]): number => {
-    return cats.reduce((acc, cat) => acc + 1 + countCategories(cat.children || []), 0);
-  };
-
-  const totalCount = countCategories(categories);
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -252,21 +293,40 @@ export default function CategoriesPage() {
             <h1 className="text-2xl font-semibold">Categories</h1>
             <p className="text-muted-foreground">Manage content categories and hierarchy</p>
           </div>
-          <Button onClick={() => handleOpenCreate(null)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Create Category
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" onClick={() => refetch()} title="Refresh">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+            <Button onClick={() => handleOpenCreate(null)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Create Category
+            </Button>
+          </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FolderTree className="w-5 h-5" />
-              Category Tree
-            </CardTitle>
-            <CardDescription>
-              {totalCount} categor{totalCount !== 1 ? 'ies' : 'y'} total
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <FolderTree className="w-5 h-5" />
+                  Category Tree
+                </CardTitle>
+                <CardDescription>
+                  {totalCount} categor{totalCount !== 1 ? 'ies' : 'y'} total
+                </CardDescription>
+              </div>
+              {categories.length > 0 && (
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={expandAll}>
+                    Expand All
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={collapseAll}>
+                    Collapse All
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -275,10 +335,19 @@ export default function CategoriesPage() {
               </div>
             ) : categories.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No categories created yet. Create your first category to get started.
+                <FolderTree className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No categories created yet.</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => handleOpenCreate(null)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create your first category
+                </Button>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-1 border rounded-lg p-4 bg-muted/20">
                 {categories.map((category) => (
                   <CategoryItem
                     key={category.id}
@@ -325,7 +394,7 @@ export default function CategoriesPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select parent category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border shadow-lg z-50">
                   <SelectItem value="none">No Parent (Root Category)</SelectItem>
                   {availableParents.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
