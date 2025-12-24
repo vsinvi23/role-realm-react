@@ -1,15 +1,42 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { useCmsList } from '@/api/hooks/useCms';
+import { useCmsList, useDeleteCms, usePublishCms, useSendCmsBack } from '@/api/hooks/useCms';
 import { CmsResponseDto, CmsStatus } from '@/api/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Grid, List, Pencil, Loader2, BookOpen, Calendar } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Search, Plus, Grid, List, Pencil, Loader2, BookOpen, Calendar, MoreHorizontal, Trash2, Send, Undo2, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const getStatusVariant = (status: CmsStatus) => {
   switch (status) {
@@ -31,7 +58,17 @@ export default function CourseManagement() {
   const [page, setPage] = useState(0);
   const pageSize = 10;
 
+  // Dialog states
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sendBackDialogOpen, setSendBackDialogOpen] = useState(false);
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<CmsResponseDto | null>(null);
+  const [sendBackComment, setSendBackComment] = useState('');
+
   const { data: cmsData, isLoading, error } = useCmsList({ page, size: pageSize });
+  const deleteCms = useDeleteCms();
+  const publishCms = usePublishCms();
+  const sendBackCms = useSendCmsBack();
 
   // Filter for courses only and apply search
   const q = searchQuery.trim().toLowerCase();
@@ -44,6 +81,101 @@ export default function CourseManagement() {
   });
 
   const totalPages = Math.ceil((cmsData?.totalElements || 0) / pageSize);
+
+  const handleDelete = async () => {
+    if (!selectedCourse) return;
+    try {
+      await deleteCms.mutateAsync(selectedCourse.id);
+      toast.success('Course deleted successfully');
+      setDeleteDialogOpen(false);
+      setSelectedCourse(null);
+    } catch {
+      toast.error('Failed to delete course');
+    }
+  };
+
+  const handlePublish = async (course: CmsResponseDto) => {
+    try {
+      await publishCms.mutateAsync({ id: course.id });
+      toast.success('Course published successfully');
+    } catch {
+      toast.error('Failed to publish course');
+    }
+  };
+
+  const handleSendBack = async () => {
+    if (!selectedCourse || !sendBackComment.trim()) return;
+    try {
+      await sendBackCms.mutateAsync({
+        id: selectedCourse.id,
+        data: { reviewerId: 0, comment: sendBackComment.trim() },
+      });
+      toast.success('Course sent back to draft');
+      setSendBackDialogOpen(false);
+      setSendBackComment('');
+      setSelectedCourse(null);
+    } catch {
+      toast.error('Failed to send course back');
+    }
+  };
+
+  const openDeleteDialog = (course: CmsResponseDto) => {
+    setSelectedCourse(course);
+    setDeleteDialogOpen(true);
+  };
+
+  const openSendBackDialog = (course: CmsResponseDto) => {
+    setSelectedCourse(course);
+    setSendBackComment('');
+    setSendBackDialogOpen(true);
+  };
+
+  const openCommentDialog = (course: CmsResponseDto) => {
+    setSelectedCourse(course);
+    setCommentDialogOpen(true);
+  };
+
+  const renderActions = (course: CmsResponseDto) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <MoreHorizontal className="w-4 h-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => navigate(`/courses/create?edit=${course.id}`)}>
+          <Pencil className="w-4 h-4 mr-2" />
+          Edit
+        </DropdownMenuItem>
+        {course.status === 'REVIEW' && (
+          <>
+            <DropdownMenuItem onClick={() => handlePublish(course)}>
+              <Send className="w-4 h-4 mr-2" />
+              Publish
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openSendBackDialog(course)}>
+              <Undo2 className="w-4 h-4 mr-2" />
+              Send Back
+            </DropdownMenuItem>
+          </>
+        )}
+        {course.reviewerComment && (
+          <DropdownMenuItem onClick={() => openCommentDialog(course)}>
+            <MessageSquare className="w-4 h-4 mr-2" />
+            View Comment
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          onClick={() => openDeleteDialog(course)}
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <DashboardLayout>
@@ -112,28 +244,22 @@ export default function CourseManagement() {
                         {course.title || 'Untitled Course'}
                       </CardTitle>
                     </div>
-                    <Badge variant={getStatusVariant(course.status)}>
-                      {course.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getStatusVariant(course.status)}>
+                        {course.status}
+                      </Badge>
+                      {renderActions(course)}
+                    </div>
                   </div>
                   <CardDescription className="line-clamp-2">
                     {course.description || 'No description'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="w-4 h-4" />
                     <span>{format(new Date(course.createdAt), 'PP')}</span>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => navigate(`/courses/create?id=${course.id}`)}
-                  >
-                    <Pencil className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -165,14 +291,7 @@ export default function CourseManagement() {
                         {format(new Date(course.createdAt), 'PP')}
                       </TableCell>
                       <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => navigate(`/courses/create?id=${course.id}`)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
+                        {renderActions(course)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -206,6 +325,68 @@ export default function CourseManagement() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Course</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{selectedCourse?.title || 'Untitled'}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Send Back Dialog */}
+      <Dialog open={sendBackDialogOpen} onOpenChange={setSendBackDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Back to Draft</DialogTitle>
+            <DialogDescription>
+              Provide feedback for the author about why this course needs revision.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Enter your feedback..."
+            value={sendBackComment}
+            onChange={(e) => setSendBackComment(e.target.value)}
+            rows={4}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendBackDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSendBack} disabled={!sendBackComment.trim()}>
+              Send Back
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Comment Dialog */}
+      <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reviewer Comment</DialogTitle>
+          </DialogHeader>
+          <div className="p-4 bg-muted rounded-lg">
+            <p className="text-sm">{selectedCourse?.reviewerComment || 'No comment'}</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setCommentDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
