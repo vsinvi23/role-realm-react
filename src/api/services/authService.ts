@@ -1,31 +1,48 @@
 import apiClient, { setAuthToken, clearAuthToken } from '../client';
-import { AuthLoginRequest, AuthSignupRequest, AuthTokenResponse } from '../types';
+import { LoginRequest, RegisterRequest, AuthResponse, ApiResponse } from '../types';
 
-const AUTH_BASE = '/api/auth';
+const USERS_BASE = '/api/users';
 
 export const authService = {
   /**
    * Login with email and password
-   * @returns JWT token
+   * POST /api/users/login
+   * @returns AuthResponse with token and user info
    */
-  login: async (credentials: AuthLoginRequest): Promise<AuthTokenResponse> => {
-    const response = await apiClient.post<AuthTokenResponse>(
-      `${AUTH_BASE}/login`,
+  login: async (credentials: LoginRequest): Promise<AuthResponse> => {
+    const response = await apiClient.post<ApiResponse<AuthResponse>>(
+      `${USERS_BASE}/login`,
       credentials
     );
-    // Store token on successful login
-    if (response.data.token) {
-      setAuthToken(response.data.token);
+    
+    // Extract data from ApiResponse wrapper
+    const authData = response.data.data;
+    
+    if (authData?.token) {
+      setAuthToken(authData.token);
     }
-    return response.data;
+    
+    return authData!;
   },
 
   /**
-   * Signup / Register a new user
-   * @returns void (201 Created on success)
+   * Register a new user
+   * POST /api/users/register
+   * @returns AuthResponse with token (auto-login after registration)
    */
-  signup: async (data: AuthSignupRequest): Promise<void> => {
-    await apiClient.post(`${AUTH_BASE}/signup`, data);
+  register: async (data: RegisterRequest): Promise<AuthResponse> => {
+    const response = await apiClient.post<ApiResponse<AuthResponse>>(
+      `${USERS_BASE}/register`,
+      data
+    );
+    
+    const authData = response.data.data;
+    
+    if (authData?.token) {
+      setAuthToken(authData.token);
+    }
+    
+    return authData!;
   },
 
   /**

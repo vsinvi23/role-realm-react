@@ -4,3 +4,4 @@ export { useUsers } from './useUsers';
 export { useRoles } from './useRoles';
 export { useGroups } from './useGroups';
 export { usePermissions } from './usePermissions';
+export * from './useCms';

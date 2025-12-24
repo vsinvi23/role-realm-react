@@ -1,0 +1,90 @@
+{
+  "info": {
+    "name": "GeekGully API - Integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/users/login", "host": ["{{baseUrl}}"], "path": ["api","users","login"] }
+      },
+      "response": []
+    },
+    {
+      "name": "Auth - Register",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"new@example.com\",\n  \"password\": \"password\",\n  \"name\": \"New User\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/users/register", "host": ["{{baseUrl}}"], "path": ["api","users","register"] }
+      }
+    },
+    {
+      "name": "Get User by ID",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/users/1", "host": ["{{baseUrl}}"], "path": ["api","users","1"] }
+      }
+    },
+    {
+      "name": "Create CMS",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"type\": \"COURSE\",\n  \"categoryId\": 1,\n  \"contentLocation\": \"\",\n  \"createdBy\": 1\n}" },
+        "url": { "raw": "{{baseUrl}}/api/cms", "host": ["{{baseUrl}}"], "path": ["api","cms"] }
+      }
+    },
+    {
+      "name": "Upload CMS Content",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "body": { "mode": "formdata", "formdata": [ { "key": "file", "type": "file", "src": "" } ] },
+        "url": { "raw": "{{baseUrl}}/api/cms/:id/upload", "host": ["{{baseUrl}}"], "path": ["api","cms",":id","upload"] }
+      }
+    },
+    {
+      "name": "Download CMS Content",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/cms/:id/content", "host": ["{{baseUrl}}"], "path": ["api","cms",":id","content"] }
+      }
+    },
+    {
+      "name": "Submit For Review",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "body": { "mode": "raw", "raw": "{ \"userId\": 1 }" },
+        "url": { "raw": "{{baseUrl}}/api/cms/:id/submit", "host": ["{{baseUrl}}"], "path": ["api","cms",":id","submit"] }
+      }
+    },
+    {
+      "name": "Send Back To Draft",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "body": { "mode": "raw", "raw": "{ \"reviewerId\": 2, \"comment\": \"Please add more examples\" }" },
+        "url": { "raw": "{{baseUrl}}/api/cms/:id/send-back", "host": ["{{baseUrl}}"], "path": ["api","cms",":id","send-back"] }
+      }
+    }
+  ]
+}
+
