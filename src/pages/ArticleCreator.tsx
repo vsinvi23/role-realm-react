@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { RichContentEditor } from '@/components/articles/RichContentEditor';
 import { SeoSettingsPanel } from '@/components/articles/SeoSettingsPanel';
 import { PublishScheduler } from '@/components/articles/PublishScheduler';
+import { ContentPreviewModal } from '@/components/shared/ContentPreviewModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -35,31 +37,16 @@ import {
   Loader2,
   Download,
   Trash2,
+  Users,
 } from 'lucide-react';
 import { Article, SeoSettings, Attachment, WorkflowStatus, ContentBlock } from '@/types/content';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addArticle, updateArticle } from '@/store/slices/articleSlice';
 import { useCreateCms, useUploadCmsContent } from '@/api/hooks/useCms';
+import { useCategories } from '@/api/hooks/useCategories';
+import { useGroups } from '@/api/hooks/useGroups';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-
-const CATEGORIES = [
-  { value: '1', label: 'Data Structures & Algorithms' },
-  { value: '2', label: 'Web Development' },
-  { value: '3', label: 'Mobile Development' },
-  { value: '4', label: 'DevOps & Cloud' },
-  { value: '5', label: 'AI & Machine Learning' },
-  { value: '6', label: 'Databases' },
-  { value: '7', label: 'Cybersecurity' },
-  { value: '8', label: 'General Programming' },
-];
-
-const ACCEPTED_FILE_TYPES = {
-  images: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
-  videos: ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'],
-  documents: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
-  all: ['*/*']
-};
 
 const formatFileSize = (bytes: number) => {
   if (bytes === 0) return '0 Bytes';
@@ -84,8 +71,11 @@ export default function ArticleCreator() {
   const { articles } = useAppSelector((state) => state.articles);
   const { user } = useAuth();
   
+  // API hooks
   const createCms = useCreateCms();
   const uploadContent = useUploadCmsContent();
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
+  const { groups, fetchGroups, isLoading: groupsLoading } = useGroups();
   
   const existingArticle = editId ? articles.find(a => a.id === editId) : null;
 
@@ -93,6 +83,7 @@ export default function ArticleCreator() {
   const [slug, setSlug] = useState(existingArticle?.slug || '');
   const [excerpt, setExcerpt] = useState(existingArticle?.excerpt || '');
   const [category, setCategory] = useState(existingArticle?.categoryPath[0] || '');
+  const [selectedGroup, setSelectedGroup] = useState('');
   const [tags, setTags] = useState<string[]>(existingArticle?.tags || []);
   const [newTag, setNewTag] = useState('');
   const [featuredImage, setFeaturedImage] = useState(existingArticle?.featuredImage || '');
@@ -117,6 +108,12 @@ export default function ArticleCreator() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [cmsId, setCmsId] = useState<number | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+  // Fetch groups on mount
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
 
   const generateSlug = () => {
     const generatedSlug = title
@@ -299,7 +296,7 @@ export default function ArticleCreator() {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => toast.info('Preview coming soon')} className="flex-1 sm:flex-none">
+            <Button variant="outline" onClick={() => setShowPreview(true)} className="flex-1 sm:flex-none">
               <Eye className="w-4 h-4 mr-2" />
               Preview
             </Button>
@@ -559,18 +556,50 @@ export default function ArticleCreator() {
                 <CardTitle className="text-base">Category *</CardTitle>
               </CardHeader>
               <CardContent>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border">
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {categoriesLoading ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border">
+                      {categories?.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id.toString()}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* User Group */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Assign to Group
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {groupsLoading ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
+                  <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select user group (optional)" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border">
+                      {groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </CardContent>
             </Card>
 
@@ -673,6 +702,31 @@ export default function ArticleCreator() {
             </Card>
           </div>
         </div>
+
+        {/* Preview Modal */}
+        <ContentPreviewModal
+          open={showPreview}
+          onOpenChange={setShowPreview}
+          type="article"
+          content={{
+            id: existingArticle?.id || 'preview',
+            title,
+            slug,
+            content: '',
+            contentBlocks,
+            excerpt,
+            categoryPath: category ? [category] : [],
+            author: user?.name || 'Current User',
+            status: 'draft',
+            seo: seoSettings,
+            featuredImage,
+            attachments,
+            tags,
+            scheduledPublishDate: scheduledDate,
+            createdAt: existingArticle?.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }}
+        />
       </div>
     </DashboardLayout>
   );

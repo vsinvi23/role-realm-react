@@ -8,3 +8,4 @@ export { groupService } from './groupService';
 export { rolePermissionService } from './rolePermissionService';
 export { groupRoleService } from './groupRoleService';
 export { userGroupService } from './userGroupService';
+export { categoryService } from './categoryService';
