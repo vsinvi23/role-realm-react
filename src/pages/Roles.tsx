@@ -437,7 +437,7 @@ export default function RolesPage() {
 
   const handleGroupSubmit = async (data: { name: string; description?: string; assignToCategories: boolean; selectedCategories: string[]; roleId?: string }) => {
     if (editingGroup) {
-      const result = await updateGroup(editingGroup.id, { name: data.name, description: data.description });
+      const result = await updateGroup(editingGroup.id, { name: data.name });
       if (result) {
         setUserGroups((prev) =>
           prev.map((g) =>
@@ -453,7 +453,7 @@ export default function RolesPage() {
         toast.success('User group updated');
       }
     } else {
-      const result = await createGroup({ name: data.name, description: data.description });
+      const result = await createGroup({ name: data.name });
       if (result) {
         const newGroup: UserGroupWithRole = {
           id: result.id,

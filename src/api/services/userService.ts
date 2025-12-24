@@ -1,12 +1,7 @@
 import apiClient from '../client';
-import { ApiResponse, UserDto, PagedResponse } from '../types';
+import { ApiResponse, UserDto } from '../types';
 
 const USERS_BASE = '/api/users';
-
-export interface UserQueryParams {
-  page?: number;
-  size?: number;
-}
 
 export const userService = {
   /**
