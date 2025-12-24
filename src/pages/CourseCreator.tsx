@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -15,8 +16,6 @@ import {
   Eye,
   Send,
   BookOpen,
-  Search,
-  Calendar,
   ArrowLeft,
   Plus,
   X,
@@ -24,20 +23,33 @@ import {
   Sparkles,
   GraduationCap,
   Clock,
+  Upload,
+  File,
+  Video,
+  FileText,
+  FileImage,
+  Loader2,
+  Download,
+  Trash2,
+  Paperclip,
+  Film,
 } from 'lucide-react';
-import { Course, WorkflowStatus } from '@/types/content';
+import { Course, WorkflowStatus, Attachment } from '@/types/content';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCourse, updateCourse } from '@/store/slices/courseSlice';
+import { useCreateCms, useUploadCmsContent } from '@/api/hooks/useCms';
+import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 const CATEGORIES = [
-  { value: 'web', label: 'Web Development' },
-  { value: 'mobile', label: 'Mobile Development' },
-  { value: 'devops', label: 'DevOps & Cloud' },
-  { value: 'ai', label: 'AI & Machine Learning' },
-  { value: 'database', label: 'Databases' },
-  { value: 'dsa', label: 'Data Structures & Algorithms' },
-  { value: 'security', label: 'Cybersecurity' },
-  { value: 'design', label: 'UI/UX Design' },
+  { value: '1', label: 'Web Development' },
+  { value: '2', label: 'Mobile Development' },
+  { value: '3', label: 'DevOps & Cloud' },
+  { value: '4', label: 'AI & Machine Learning' },
+  { value: '5', label: 'Databases' },
+  { value: '6', label: 'Data Structures & Algorithms' },
+  { value: '7', label: 'Cybersecurity' },
+  { value: '8', label: 'UI/UX Design' },
 ];
 
 const LANGUAGES = [
@@ -48,12 +60,37 @@ const LANGUAGES = [
   { value: 'German', label: 'German' },
 ];
 
+const LEVELS = [
+  { value: 'beginner', label: 'Beginner' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'advanced', label: 'Advanced' },
+];
+
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+const getFileIcon = (type: string) => {
+  if (type.startsWith('image/')) return FileImage;
+  if (type.startsWith('video/')) return Video;
+  if (type.includes('pdf') || type.includes('document')) return FileText;
+  return File;
+};
+
 export default function CourseCreator() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
   const dispatch = useAppDispatch();
   const { courses } = useAppSelector((state) => state.courses);
+  const { user } = useAuth();
+
+  const createCms = useCreateCms();
+  const uploadContent = useUploadCmsContent();
 
   const existingCourse = editId ? courses.find((c) => c.id === editId) : null;
 
@@ -66,8 +103,13 @@ export default function CourseCreator() {
   const [duration, setDuration] = useState(existingCourse?.duration?.toString() || '0');
   const [language, setLanguage] = useState(existingCourse?.language || 'English');
   const [instructor, setInstructor] = useState(existingCourse?.instructor || '');
+  const [level, setLevel] = useState('beginner');
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [cmsId, setCmsId] = useState<number | null>(null);
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -80,14 +122,108 @@ export default function CourseCreator() {
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    handleFileUpload(files);
+  }, []);
+
+  const handleFileUpload = async (files: File[]) => {
+    const maxSize = 100 * 1024 * 1024; // 100MB for videos
+    
+    for (const file of files) {
+      if (file.size > maxSize) {
+        toast.error(`${file.name} exceeds 100MB limit`);
+        continue;
+      }
+
+      const fileId = `${file.name}-${Date.now()}`;
+      setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
+
+      try {
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => {
+            const current = prev[fileId] || 0;
+            if (current >= 90) return prev;
+            return { ...prev, [fileId]: current + 10 };
+          });
+        }, 200);
+
+        if (cmsId) {
+          await uploadContent.mutateAsync({ id: cmsId, file });
+        }
+
+        clearInterval(progressInterval);
+        setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
+
+        const newAttachment: Attachment = {
+          id: fileId,
+          name: file.name,
+          url: URL.createObjectURL(file),
+          size: file.size,
+          type: file.type,
+          uploadedAt: new Date().toISOString(),
+        };
+        setAttachments(prev => [...prev, newAttachment]);
+
+        if (file.type.startsWith('image/') && !thumbnail) {
+          setThumbnail(newAttachment.url);
+        }
+
+        setTimeout(() => {
+          setUploadProgress(prev => {
+            const { [fileId]: _, ...rest } = prev;
+            return rest;
+          });
+        }, 500);
+
+        toast.success(`${file.name} uploaded successfully`);
+      } catch (error) {
+        setUploadProgress(prev => {
+          const { [fileId]: _, ...rest } = prev;
+          return rest;
+        });
+        toast.error(`Failed to upload ${file.name}`);
+      }
+    }
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments(attachments.filter((a) => a.id !== id));
+  };
+
   const handleSave = async (status: WorkflowStatus = 'draft') => {
     if (!title.trim()) {
       toast.error('Title is required');
       return;
     }
+    if (!categoryId) {
+      toast.error('Please select a category');
+      return;
+    }
 
     setIsSaving(true);
     try {
+      if (!cmsId && !existingCourse) {
+        const cmsResponse = await createCms.mutateAsync({
+          type: 'COURSE',
+          categoryId: parseInt(categoryId),
+          createdBy: user?.id || 1,
+        });
+        setCmsId(cmsResponse.id);
+      }
+
       const courseData: Course = {
         id: existingCourse?.id || `course-${Date.now()}`,
         title,
@@ -95,7 +231,7 @@ export default function CourseCreator() {
         categoryId,
         categoryPath: categoryId ? [categoryId] : [],
         thumbnail,
-        instructor: instructor || 'Current User',
+        instructor: instructor || user?.name || 'Current User',
         duration: parseInt(duration) || 0,
         status,
         sections: existingCourse?.sections || [],
@@ -121,11 +257,15 @@ export default function CourseCreator() {
     }
   };
 
+  const videoCount = attachments.filter(a => a.type.startsWith('video/')).length;
+  const documentCount = attachments.filter(a => !a.type.startsWith('video/') && !a.type.startsWith('image/')).length;
+  const imageCount = attachments.filter(a => a.type.startsWith('image/')).length;
+
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/courses')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -136,22 +276,22 @@ export default function CourseCreator() {
                 {existingCourse ? 'Edit Course' : 'Create Course'}
               </h1>
               <p className="text-sm text-muted-foreground">
-                Set up your course details, then add content
+                Set up your course details, upload videos, and add resources
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => toast.info('Preview coming soon')}>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => toast.info('Preview coming soon')} className="flex-1 sm:flex-none">
               <Eye className="w-4 h-4 mr-2" />
               Preview
             </Button>
-            <Button variant="outline" onClick={() => handleSave('draft')} disabled={isSaving}>
+            <Button variant="outline" onClick={() => handleSave('draft')} disabled={isSaving} className="flex-1 sm:flex-none">
               <Save className="w-4 h-4 mr-2" />
-              Save Draft
+              {isSaving ? 'Saving...' : 'Save Draft'}
             </Button>
-            <Button onClick={() => handleSave('submitted')} disabled={isSaving}>
+            <Button onClick={() => handleSave('submitted')} disabled={isSaving} className="flex-1 sm:flex-none">
               <Send className="w-4 h-4 mr-2" />
-              Submit for Review
+              Submit
             </Button>
           </div>
         </div>
@@ -161,10 +301,18 @@ export default function CourseCreator() {
           {/* Editor Area */}
           <div className="col-span-12 lg:col-span-8">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
+              <TabsList className="mb-4 flex-wrap">
                 <TabsTrigger value="details" className="gap-2">
                   <BookOpen className="w-4 h-4" />
                   Details
+                </TabsTrigger>
+                <TabsTrigger value="media" className="gap-2">
+                  <Film className="w-4 h-4" />
+                  Videos & Media
+                </TabsTrigger>
+                <TabsTrigger value="resources" className="gap-2">
+                  <Paperclip className="w-4 h-4" />
+                  Resources
                 </TabsTrigger>
               </TabsList>
 
@@ -173,7 +321,7 @@ export default function CourseCreator() {
                 <Card>
                   <CardContent className="pt-6 space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="title">Course Title</Label>
+                      <Label htmlFor="title">Course Title *</Label>
                       <Input
                         id="title"
                         value={title}
@@ -188,8 +336,8 @@ export default function CourseCreator() {
                         id="description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Describe what students will learn..."
-                        rows={4}
+                        placeholder="Describe what students will learn in this course..."
+                        rows={5}
                       />
                     </div>
                   </CardContent>
@@ -209,7 +357,7 @@ export default function CourseCreator() {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Category</Label>
+                        <Label>Category *</Label>
                         <Select value={categoryId} onValueChange={setCategoryId}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select category" />
@@ -239,7 +387,22 @@ export default function CourseCreator() {
                         </Select>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Level</Label>
+                        <Select value={level} onValueChange={setLevel}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select level" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border z-50">
+                            {LEVELS.map((lvl) => (
+                              <SelectItem key={lvl.value} value={lvl.value}>
+                                {lvl.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="duration" className="flex items-center gap-2">
                           <Clock className="w-4 h-4" />
@@ -266,6 +429,238 @@ export default function CourseCreator() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              <TabsContent value="media" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Upload className="w-5 h-5" />
+                      Upload Course Videos
+                    </CardTitle>
+                    <CardDescription>
+                      Upload video lessons for your course (MP4, WebM, MOV - max 100MB each)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Drop Zone */}
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={cn(
+                        'border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer',
+                        isDragging 
+                          ? 'border-primary bg-primary/5 scale-[1.02]' 
+                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                      )}
+                    >
+                      <input
+                        type="file"
+                        multiple
+                        onChange={(e) => e.target.files && handleFileUpload(Array.from(e.target.files))}
+                        className="hidden"
+                        id="video-upload"
+                        accept="video/*,image/*"
+                      />
+                      <label htmlFor="video-upload" className="cursor-pointer">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Film className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-lg font-medium mb-1">
+                          Drop videos here or click to upload
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Supports MP4, WebM, MOV, and image thumbnails
+                        </p>
+                      </label>
+                    </div>
+
+                    {/* Supported formats */}
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {['MP4', 'WebM', 'MOV', 'JPG', 'PNG'].map((format) => (
+                        <Badge key={format} variant="outline" className="text-xs">
+                          {format}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    {/* Upload Progress */}
+                    {Object.entries(uploadProgress).length > 0 && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium">Uploading...</p>
+                        {Object.entries(uploadProgress).map(([name, progress]) => (
+                          <div key={name} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{name.split('-')[0]}</p>
+                              <Progress value={progress} className="h-1.5 mt-1" />
+                            </div>
+                            <span className="text-xs text-muted-foreground">{progress}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Uploaded Videos & Images */}
+                    {attachments.filter(a => a.type.startsWith('video/') || a.type.startsWith('image/')).length > 0 && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          <Video className="w-4 h-4" />
+                          Uploaded Media ({videoCount + imageCount})
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {attachments
+                            .filter(a => a.type.startsWith('video/') || a.type.startsWith('image/'))
+                            .map((attachment) => {
+                              const isVideo = attachment.type.startsWith('video/');
+                              const isImage = attachment.type.startsWith('image/');
+                              return (
+                                <div
+                                  key={attachment.id}
+                                  className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg group hover:shadow-sm transition-shadow"
+                                >
+                                  {isImage ? (
+                                    <div className="w-14 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
+                                      <img src={attachment.url} alt={attachment.name} className="w-full h-full object-cover" />
+                                    </div>
+                                  ) : (
+                                    <div className="w-14 h-10 rounded bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
+                                      <Video className="w-5 h-5 text-primary" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{attachment.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {formatFileSize(attachment.size)} • {isVideo ? 'Video' : 'Image'}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                                      onClick={() => handleRemoveAttachment(attachment.id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="resources" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Paperclip className="w-5 h-5" />
+                      Course Resources
+                    </CardTitle>
+                    <CardDescription>
+                      Upload supplementary materials like PDFs, slides, and documents
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Drop Zone */}
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={cn(
+                        'border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer',
+                        isDragging 
+                          ? 'border-primary bg-primary/5 scale-[1.02]' 
+                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                      )}
+                    >
+                      <input
+                        type="file"
+                        multiple
+                        onChange={(e) => e.target.files && handleFileUpload(Array.from(e.target.files))}
+                        className="hidden"
+                        id="resource-upload"
+                        accept="application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip"
+                      />
+                      <label htmlFor="resource-upload" className="cursor-pointer">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                          <FileText className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-lg font-medium mb-1">
+                          Drop resources here or click to upload
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          PDFs, Word docs, Excel sheets, PowerPoint, ZIP files
+                        </p>
+                      </label>
+                    </div>
+
+                    {/* Supported formats */}
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {['PDF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'PPT', 'PPTX', 'ZIP'].map((format) => (
+                        <Badge key={format} variant="outline" className="text-xs">
+                          {format}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    {/* Uploaded Resources */}
+                    {attachments.filter(a => !a.type.startsWith('video/') && !a.type.startsWith('image/')).length > 0 && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          <File className="w-4 h-4" />
+                          Uploaded Resources ({documentCount})
+                        </p>
+                        <div className="space-y-2">
+                          {attachments
+                            .filter(a => !a.type.startsWith('video/') && !a.type.startsWith('image/'))
+                            .map((attachment) => {
+                              const Icon = getFileIcon(attachment.type);
+                              return (
+                                <div
+                                  key={attachment.id}
+                                  className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg group hover:shadow-sm transition-shadow"
+                                >
+                                  <div className="w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                    <Icon className="w-5 h-5 text-muted-foreground" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{attachment.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {formatFileSize(attachment.size)}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => window.open(attachment.url, '_blank')}
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                                      onClick={() => handleRemoveAttachment(attachment.id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </div>
 
@@ -283,15 +678,23 @@ export default function CourseCreator() {
                 <Input
                   value={thumbnail}
                   onChange={(e) => setThumbnail(e.target.value)}
-                  placeholder="Enter image URL..."
+                  placeholder="Enter image URL or upload in Media tab..."
                 />
                 {thumbnail && (
-                  <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                  <div className="relative aspect-video bg-muted rounded-lg overflow-hidden group">
                     <img
                       src={thumbnail}
                       alt="Thumbnail"
                       className="w-full h-full object-cover"
                     />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => setThumbnail('')}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
                 )}
               </CardContent>
@@ -308,29 +711,34 @@ export default function CourseCreator() {
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Add tag..."
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
                   />
                   <Button size="icon" onClick={handleAddTag}>
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="gap-1">
-                      {tag}
-                      <button onClick={() => handleRemoveTag(tag)}>
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                        {tag}
+                        <button 
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-1 hover:bg-muted rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Quick Stats */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Quick Stats</CardTitle>
+                <CardTitle className="text-base">Content Summary</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 text-sm">
@@ -341,12 +749,24 @@ export default function CourseCreator() {
                     </span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-muted-foreground">Level</span>
+                    <Badge variant="outline" className="capitalize">{level}</Badge>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Language</span>
                     <span className="font-medium">{language}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Duration</span>
                     <span className="font-medium">{duration} min</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Videos</span>
+                    <span className="font-medium">{videoCount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Resources</span>
+                    <span className="font-medium">{documentCount}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tags</span>
