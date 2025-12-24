@@ -33,12 +33,14 @@ export default function ArticleManagement() {
   const { data: cmsData, isLoading, error } = useCmsList({ page, size: pageSize });
 
   // Filter for articles only and apply search
-  const articles = (cmsData?.items || []).filter(
-    (item: CmsResponseDto) => 
-      item.type === 'ARTICLE' && 
-      (item.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-       item.description?.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const q = searchQuery.trim().toLowerCase();
+  const articles = (cmsData?.items || []).filter((item: CmsResponseDto) => {
+    if (item.type !== 'ARTICLE') return false;
+    if (!q) return true;
+    const title = (item.title ?? '').toLowerCase();
+    const desc = (item.description ?? '').toLowerCase();
+    return title.includes(q) || desc.includes(q);
+  });
 
   const totalPages = Math.ceil((cmsData?.total || 0) / pageSize);
 
