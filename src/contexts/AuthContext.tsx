@@ -31,10 +31,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Default context value for when provider isn't available (prevents HMR crashes)
+const defaultAuthContext: AuthContextType = {
+  user: null,
+  isLoading: true,
+  login: async () => ({ error: 'Auth not initialized' }),
+  signup: async () => ({ error: 'Auth not initialized' }),
+  socialLogin: async () => ({ error: 'Auth not initialized' }),
+  logout: () => {},
+  isAuthenticated: false,
+  isAdmin: false,
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  // Return default context instead of throwing - prevents crashes during HMR
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    console.warn('useAuth called outside AuthProvider - using default context');
+    return defaultAuthContext;
   }
   return context;
 };
