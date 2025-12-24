@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ContentPreviewModal } from '@/components/shared/ContentPreviewModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -20,7 +22,6 @@ import {
   Plus,
   X,
   Image,
-  Sparkles,
   GraduationCap,
   Clock,
   Upload,
@@ -33,24 +34,16 @@ import {
   Trash2,
   Paperclip,
   Film,
+  Users,
 } from 'lucide-react';
 import { Course, WorkflowStatus, Attachment } from '@/types/content';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCourse, updateCourse } from '@/store/slices/courseSlice';
 import { useCreateCms, useUploadCmsContent } from '@/api/hooks/useCms';
+import { useCategories } from '@/api/hooks/useCategories';
+import { useGroups } from '@/api/hooks/useGroups';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-
-const CATEGORIES = [
-  { value: '1', label: 'Web Development' },
-  { value: '2', label: 'Mobile Development' },
-  { value: '3', label: 'DevOps & Cloud' },
-  { value: '4', label: 'AI & Machine Learning' },
-  { value: '5', label: 'Databases' },
-  { value: '6', label: 'Data Structures & Algorithms' },
-  { value: '7', label: 'Cybersecurity' },
-  { value: '8', label: 'UI/UX Design' },
-];
 
 const LANGUAGES = [
   { value: 'English', label: 'English' },
@@ -89,14 +82,18 @@ export default function CourseCreator() {
   const { courses } = useAppSelector((state) => state.courses);
   const { user } = useAuth();
 
+  // API hooks
   const createCms = useCreateCms();
   const uploadContent = useUploadCmsContent();
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
+  const { groups, fetchGroups, isLoading: groupsLoading } = useGroups();
 
   const existingCourse = editId ? courses.find((c) => c.id === editId) : null;
 
   const [title, setTitle] = useState(existingCourse?.title || '');
   const [description, setDescription] = useState(existingCourse?.description || '');
   const [categoryId, setCategoryId] = useState(existingCourse?.categoryId || '');
+  const [selectedGroup, setSelectedGroup] = useState('');
   const [tags, setTags] = useState<string[]>(existingCourse?.tags || []);
   const [newTag, setNewTag] = useState('');
   const [thumbnail, setThumbnail] = useState(existingCourse?.thumbnail || '');
@@ -110,6 +107,12 @@ export default function CourseCreator() {
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [cmsId, setCmsId] = useState<number | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+  // Fetch groups on mount
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -281,7 +284,7 @@ export default function CourseCreator() {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => toast.info('Preview coming soon')} className="flex-1 sm:flex-none">
+            <Button variant="outline" onClick={() => setShowPreview(true)} className="flex-1 sm:flex-none">
               <Eye className="w-4 h-4 mr-2" />
               Preview
             </Button>
@@ -358,18 +361,22 @@ export default function CourseCreator() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Category *</Label>
-                        <Select value={categoryId} onValueChange={setCategoryId}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border z-50">
-                            {CATEGORIES.map((cat) => (
-                              <SelectItem key={cat.value} value={cat.value}>
-                                {cat.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {categoriesLoading ? (
+                          <Skeleton className="h-10 w-full" />
+                        ) : (
+                          <Select value={categoryId} onValueChange={setCategoryId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border z-50">
+                              {categories?.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.id.toString()}>
+                                  {cat.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label>Language</Label>
@@ -386,6 +393,30 @@ export default function CourseCreator() {
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
+                    
+                    {/* User Group Assignment */}
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Assign to Group
+                      </Label>
+                      {groupsLoading ? (
+                        <Skeleton className="h-10 w-full" />
+                      ) : (
+                        <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select user group (optional)" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border z-50">
+                            {groups.map((group) => (
+                              <SelectItem key={group.id} value={group.id}>
+                                {group.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
@@ -745,7 +776,7 @@ export default function CourseCreator() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Category</span>
                     <span className="font-medium">
-                      {CATEGORIES.find((c) => c.value === categoryId)?.label || 'Not set'}
+                      {categories?.find((c) => c.id.toString() === categoryId)?.name || 'Not set'}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -777,6 +808,29 @@ export default function CourseCreator() {
             </Card>
           </div>
         </div>
+
+        {/* Preview Modal */}
+        <ContentPreviewModal
+          open={showPreview}
+          onOpenChange={setShowPreview}
+          type="course"
+          content={{
+            id: existingCourse?.id || 'preview',
+            title,
+            description,
+            categoryId,
+            categoryPath: categoryId ? [categoryId] : [],
+            thumbnail,
+            instructor: instructor || user?.name || 'Current User',
+            duration: parseInt(duration) || 0,
+            status: 'draft',
+            sections: existingCourse?.sections || [],
+            tags,
+            language,
+            createdAt: existingCourse?.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }}
+        />
       </div>
     </DashboardLayout>
   );
