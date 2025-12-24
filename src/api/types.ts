@@ -16,9 +16,13 @@ export interface ApiResponse<T = unknown> {
 
 export interface PagedResponse<T> {
   items: T[];
-  totalElements: number;
-  page: number;
-  size: number;
+  total: number;
+  currentPage: number;
+  pageSize: number;
+  // Legacy aliases for compatibility
+  totalElements?: number;
+  page?: number;
+  size?: number;
 }
 
 // ============================================
