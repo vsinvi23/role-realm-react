@@ -30,7 +30,7 @@ export const cmsService = {
         size: params?.size ?? 10,
       },
     });
-    return response.data.data || { items: [], totalElements: 0, page: 0, size: 10 };
+    return response.data.data || { items: [], total: 0, currentPage: 0, pageSize: 10 };
   },
 
   /**

@@ -41,7 +41,7 @@ export default function CourseManagement() {
        item.description?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const totalPages = Math.ceil((cmsData?.totalElements || 0) / pageSize);
+  const totalPages = Math.ceil((cmsData?.total || 0) / pageSize);
 
   return (
     <DashboardLayout>
