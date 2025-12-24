@@ -1,10 +1,5 @@
 import apiClient from '../client';
-import { 
-  ApiResponse, 
-  CategoryResponseDto, 
-  CategoryPagedResponse, 
-  CategoryCreateDto 
-} from '../types';
+import { ApiResponse, CategoryResponseDto, CategoryPagedResponse } from '../types';
 
 const CATEGORIES_BASE = '/api/categories';
 
@@ -35,32 +30,6 @@ export const categoryService = {
   getCategory: async (categoryId: number): Promise<CategoryResponseDto> => {
     const response = await apiClient.get<ApiResponse<CategoryResponseDto>>(`${CATEGORIES_BASE}/${categoryId}`);
     return response.data.data!;
-  },
-
-  /**
-   * Create a new category
-   * POST /api/categories
-   */
-  createCategory: async (data: CategoryCreateDto): Promise<CategoryResponseDto> => {
-    const response = await apiClient.post<ApiResponse<CategoryResponseDto>>(CATEGORIES_BASE, data);
-    return response.data.data!;
-  },
-
-  /**
-   * Update an existing category
-   * PUT /api/categories/:id
-   */
-  updateCategory: async (categoryId: number, data: CategoryCreateDto): Promise<CategoryResponseDto> => {
-    const response = await apiClient.put<ApiResponse<CategoryResponseDto>>(`${CATEGORIES_BASE}/${categoryId}`, data);
-    return response.data.data!;
-  },
-
-  /**
-   * Delete a category
-   * DELETE /api/categories/:id
-   */
-  deleteCategory: async (categoryId: number): Promise<void> => {
-    await apiClient.delete(`${CATEGORIES_BASE}/${categoryId}`);
   },
 };
 

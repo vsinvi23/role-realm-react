@@ -1,7 +1,21 @@
 import { useState, useCallback } from 'react';
 import { userService } from '../services/userService';
-import { UserResponse, UserRequest, PageResponse, UserQueryParams } from '../types';
+import { UserResponse, UserRequest, PageResponse, UserQueryParams, UserDto } from '../types';
 import { AxiosError } from 'axios';
+
+// Helper to map UserDto to UserResponse for backwards compatibility
+function mapUserDtoToResponse(dto: UserDto): UserResponse {
+  return {
+    id: String(dto.id),
+    name: dto.name,
+    email: dto.email,
+    status: dto.status as UserResponse['status'],
+    lastLogin: dto.lastLogin,
+    createdAt: dto.createdAt,
+    mobileNo: dto.mobileNo,
+    groups: dto.groups,
+  };
+}
 
 interface UseUsersReturn {
   users: UserResponse[];
@@ -26,15 +40,16 @@ export const useUsers = (): UseUsersReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Note: User list endpoint not available in current API - returns empty
   const fetchUsers = useCallback(async (params?: UserQueryParams) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await userService.getUsers(params);
-      setUsers(response.content);
-      setTotalElements(response.totalElements);
-      setTotalPages(response.totalPages);
-      setCurrentPage(response.page);
+      // User list endpoint not in current API spec
+      setUsers([]);
+      setTotalElements(0);
+      setTotalPages(0);
+      setCurrentPage(params?.page ?? 0);
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       setError(axiosError.response?.data?.message || 'Failed to fetch users');
@@ -47,7 +62,8 @@ export const useUsers = (): UseUsersReturn => {
     setIsLoading(true);
     setError(null);
     try {
-      return await userService.getUser(userId);
+      const dto = await userService.getUser(parseInt(userId));
+      return mapUserDtoToResponse(dto);
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       setError(axiosError.response?.data?.message || 'Failed to fetch user');
@@ -57,57 +73,25 @@ export const useUsers = (): UseUsersReturn => {
     }
   }, []);
 
+  // Stub - not available in current API
   const createUser = useCallback(async (data: UserRequest): Promise<UserResponse | null> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const newUser = await userService.createUser(data);
-      setUsers((prev) => [...prev, newUser]);
-      return newUser;
-    } catch (err) {
-      const axiosError = err as AxiosError<{ message?: string }>;
-      setError(axiosError.response?.data?.message || 'Failed to create user');
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
+    setError('Create user operation not available in current API');
+    return null;
   }, []);
 
+  // Stub - not available in current API
   const updateUser = useCallback(
     async (userId: string, data: UserRequest): Promise<UserResponse | null> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const updatedUser = await userService.updateUser(userId, data);
-        setUsers((prev) =>
-          prev.map((user) => (user.id === userId ? updatedUser : user))
-        );
-        return updatedUser;
-      } catch (err) {
-        const axiosError = err as AxiosError<{ message?: string }>;
-        setError(axiosError.response?.data?.message || 'Failed to update user');
-        return null;
-      } finally {
-        setIsLoading(false);
-      }
+      setError('Update user operation not available in current API');
+      return null;
     },
     []
   );
 
+  // Stub - not available in current API
   const deleteUser = useCallback(async (userId: string): Promise<boolean> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await userService.deleteUser(userId);
-      setUsers((prev) => prev.filter((user) => user.id !== userId));
-      return true;
-    } catch (err) {
-      const axiosError = err as AxiosError<{ message?: string }>;
-      setError(axiosError.response?.data?.message || 'Failed to delete user');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+    setError('Delete user operation not available in current API');
+    return false;
   }, []);
 
   const clearError = useCallback(() => {

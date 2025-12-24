@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { groupService, GroupQueryParams } from '../services/groupService';
 import { groupRoleService } from '../services/groupRoleService';
 import { userGroupService } from '../services/userGroupService';
@@ -31,50 +31,6 @@ export const useGroup = (id: number, enabled = true) => {
     queryKey: groupKeys.detail(id),
     queryFn: () => groupService.getGroup(id),
     enabled: enabled && id > 0,
-  });
-};
-
-/**
- * Hook to create a new group
- */
-export const useCreateGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: GroupRequest) => groupService.createGroup(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: groupKeys.all });
-    },
-  });
-};
-
-/**
- * Hook to update an existing group
- */
-export const useUpdateGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: GroupRequest }) =>
-      groupService.updateGroup(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: groupKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: groupKeys.all });
-    },
-  });
-};
-
-/**
- * Hook to delete a group
- */
-export const useDeleteGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: number) => groupService.deleteGroup(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: groupKeys.all });
-    },
   });
 };
 
@@ -122,7 +78,7 @@ const mapToLegacy = (dto: GroupResponseDto): LegacyGroupResponse => ({
 
 /**
  * Legacy hook for backward compatibility with Roles.tsx
- * @deprecated Use useGroupsQuery, useGroup, useCreateGroup, etc. instead
+ * Note: Create, Update, Delete operations are not available in current API
  */
 export const useGroups = (): UseGroupsReturn => {
   const [groups, setGroups] = useState<LegacyGroupResponse[]>([]);
@@ -158,59 +114,23 @@ export const useGroups = (): UseGroupsReturn => {
     }
   }, []);
 
+  // Stub implementations for operations not in current API
   const createGroup = useCallback(async (data: GroupRequest): Promise<LegacyGroupResponse | null> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const newGroup = await groupService.createGroup(data);
-      const legacyGroup = mapToLegacy(newGroup);
-      setGroups((prev) => [...prev, legacyGroup]);
-      return legacyGroup;
-    } catch (err) {
-      const axiosError = err as AxiosError<{ message?: string }>;
-      setError(axiosError.response?.data?.message || 'Failed to create group');
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
+    setError('Create group operation not available in current API');
+    return null;
   }, []);
 
   const updateGroup = useCallback(
     async (groupId: string, data: GroupRequest): Promise<LegacyGroupResponse | null> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const updatedGroup = await groupService.updateGroup(parseInt(groupId), data);
-        const legacyGroup = mapToLegacy(updatedGroup);
-        setGroups((prev) =>
-          prev.map((group) => (group.id === groupId ? legacyGroup : group))
-        );
-        return legacyGroup;
-      } catch (err) {
-        const axiosError = err as AxiosError<{ message?: string }>;
-        setError(axiosError.response?.data?.message || 'Failed to update group');
-        return null;
-      } finally {
-        setIsLoading(false);
-      }
+      setError('Update group operation not available in current API');
+      return null;
     },
     []
   );
 
   const deleteGroup = useCallback(async (groupId: string): Promise<boolean> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await groupService.deleteGroup(parseInt(groupId));
-      setGroups((prev) => prev.filter((group) => group.id !== groupId));
-      return true;
-    } catch (err) {
-      const axiosError = err as AxiosError<{ message?: string }>;
-      setError(axiosError.response?.data?.message || 'Failed to delete group');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+    setError('Delete group operation not available in current API');
+    return false;
   }, []);
 
   // Role-Group mappings
@@ -310,5 +230,10 @@ export const useGroups = (): UseGroupsReturn => {
     clearError,
   };
 };
+
+// Export stubs for backward compatibility
+export const useCreateGroup = () => ({ mutate: () => {}, mutateAsync: async () => null, isPending: false });
+export const useUpdateGroup = () => ({ mutate: () => {}, mutateAsync: async () => null, isPending: false });
+export const useDeleteGroup = () => ({ mutate: () => {}, mutateAsync: async () => {}, isPending: false });
 
 export default useGroups;

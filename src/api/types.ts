@@ -64,7 +64,7 @@ export interface UserQueryParams {
   search?: string;
 }
 
-// Legacy types for backwards compatibility
+// Legacy types for backwards compatibility with existing UI
 export interface UserRequest {
   name: string;
   email: string;
@@ -113,7 +113,7 @@ export interface CmsResponseDto {
   type: CmsType;
   categoryId: number;
   status: CmsStatus;
-  contentLocation: string;
+  contentLocation: string | null;
   contentName: string;
   contentType: string;
   contentSize: number;
@@ -150,43 +150,27 @@ export interface StoredFileInfo {
 }
 
 // ============================================
-// ROLE TYPES
+// CATEGORY TYPES
 // ============================================
 
-export interface RoleRequest {
+export interface CategoryChildDto {
+  id: number;
   name: string;
-  system?: boolean;
+  parentId: number | null;
 }
 
-export interface RoleResponse {
-  id: string;
+export interface CategoryResponseDto {
+  id: number;
   name: string;
-  system: boolean;
+  parentId: number | null;
+  children: CategoryChildDto[] | null;
 }
 
-// ============================================
-// PERMISSION TYPES
-// ============================================
-
-export interface PermissionRequest {
-  module: string;
-  view?: boolean;
-  create?: boolean;
-  edit?: boolean;
-  delete?: boolean;
-  publish?: boolean;
-  manage?: boolean;
-}
-
-export interface PermissionResponse {
-  id: string;
-  module: string;
-  view: boolean;
-  create: boolean;
-  edit: boolean;
-  delete: boolean;
-  publish: boolean;
-  manage: boolean;
+export interface CategoryPagedResponse {
+  items: CategoryResponseDto[];
+  total: number;
+  currentPage: number;
+  pageSize: number;
 }
 
 // ============================================
@@ -226,43 +210,43 @@ export interface GroupResponse {
 }
 
 // ============================================
-// CATEGORY TYPES
+// ROLE TYPES (Legacy - for UI compatibility)
 // ============================================
 
-export interface CategoryChildDto {
-  id: number;
+export interface RoleRequest {
   name: string;
-  parentId: number | null;
+  system?: boolean;
 }
 
-export interface CategoryResponseDto {
-  id: number;
+export interface RoleResponse {
+  id: string;
   name: string;
-  parentId: number | null;
-  children: CategoryChildDto[] | null;
+  system: boolean;
 }
 
-export interface CategoryPagedResponse {
-  items: CategoryResponseDto[];
-  total: number;
-  currentPage: number;
-  pageSize: number;
+// ============================================
+// PERMISSION TYPES (Legacy - for UI compatibility)
+// ============================================
+
+export interface PermissionRequest {
+  module: string;
+  view?: boolean;
+  create?: boolean;
+  edit?: boolean;
+  delete?: boolean;
+  publish?: boolean;
+  manage?: boolean;
 }
 
-// Legacy type for backwards compatibility
-export interface CategoryDto {
-  id: number;
-  name: string;
-  description?: string;
-  parentId?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CategoryCreateDto {
-  name: string;
-  description?: string;
-  parentId?: number;
+export interface PermissionResponse {
+  id: string;
+  module: string;
+  view: boolean;
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+  publish: boolean;
+  manage: boolean;
 }
 
 // ============================================
