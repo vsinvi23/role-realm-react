@@ -1,22 +1,35 @@
-// API Types based on OpenAPI specification
+// API Types based on OpenAPI specification (GeekGully API v1.0.0)
+
+// ============================================
+// GENERIC API RESPONSE WRAPPER
+// ============================================
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  message: string;
+  data: T | null;
+}
 
 // ============================================
 // AUTH TYPES
 // ============================================
 
-export interface AuthLoginRequest {
+export interface LoginRequest {
   email: string;
   password: string;
 }
 
-export interface AuthSignupRequest {
+export interface RegisterRequest {
+  email: string;
+  password: string;
   name: string;
-  email: string;
-  password: string;
-  status: UserStatus;
+  mobileNo?: string;
 }
 
-export interface AuthTokenResponse {
+export interface AuthResponse {
+  userId: number;
+  email: string;
+  message: string;
   token: string;
 }
 
@@ -26,11 +39,38 @@ export interface AuthTokenResponse {
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'DEACTIVATED';
 
+export interface UserDto {
+  id: number;
+  email: string;
+  name: string;
+  mobileNo?: string;
+  status: string;
+  lastLogin: string | null;
+  createdAt: string;
+  groups: string[];
+}
+
+export interface PagedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export interface UserQueryParams {
+  page?: number;
+  size?: number;
+  status?: UserStatus;
+  search?: string;
+}
+
+// Legacy types for backwards compatibility
 export interface UserRequest {
   name: string;
   email: string;
   password?: string;
   status: UserStatus;
+  mobileNo?: string;
 }
 
 export interface UserResponse {
@@ -40,6 +80,8 @@ export interface UserResponse {
   status: UserStatus;
   lastLogin: string | null;
   createdAt: string;
+  mobileNo?: string;
+  groups?: string[];
 }
 
 export interface PageResponse<T> {
@@ -51,11 +93,56 @@ export interface PageResponse<T> {
   last: boolean;
 }
 
-export interface UserQueryParams {
-  page?: number;
-  size?: number;
-  status?: UserStatus;
-  search?: string;
+// ============================================
+// CMS TYPES
+// ============================================
+
+export type CmsType = 'ARTICLE' | 'COURSE';
+
+export type CmsStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
+
+export interface CmsCreateDto {
+  type: CmsType;
+  categoryId: number;
+  contentLocation?: string;
+  createdBy: number;
+}
+
+export interface CmsResponseDto {
+  id: number;
+  type: CmsType;
+  categoryId: number;
+  status: CmsStatus;
+  contentLocation: string;
+  contentName: string;
+  contentType: string;
+  contentSize: number;
+  createdBy: number;
+  createdAt: string;
+  updatedAt: string;
+  reviewerComment?: string;
+  reviewerId?: number;
+  reviewerName?: string;
+}
+
+export interface CmsSubmitRequest {
+  userId: number;
+}
+
+export interface CmsPublishRequest {
+  userId: number;
+}
+
+export interface CmsSendBackRequest {
+  reviewerId: number;
+  comment: string;
+}
+
+export interface StoredFileInfo {
+  path: string;
+  originalName: string;
+  contentType: string;
+  size: number;
 }
 
 // ============================================
@@ -112,6 +199,25 @@ export interface GroupResponse {
   name: string;
   description: string | null;
   members?: UserResponse[];
+}
+
+// ============================================
+// CATEGORY TYPES
+// ============================================
+
+export interface CategoryDto {
+  id: number;
+  name: string;
+  description?: string;
+  parentId?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CategoryCreateDto {
+  name: string;
+  description?: string;
+  parentId?: number;
 }
 
 // ============================================

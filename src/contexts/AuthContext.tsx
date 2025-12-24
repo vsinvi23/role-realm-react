@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService, userService } from '@/api/services';
-import { getAuthToken, clearAuthToken, setAuthToken } from '@/api/client';
-import { UserResponse, UserStatus } from '@/api/types';
+import { authService } from '@/api/services';
+import { getAuthToken, clearAuthToken } from '@/api/client';
+import { UserStatus } from '@/api/types';
 
 interface AuthUser {
-  id: string;
+  id: number;
   email: string;
   name: string;
   avatar?: string;
@@ -16,7 +16,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ error?: string }>;
-  signup: (email: string, password: string, name: string) => Promise<{ error?: string }>;
+  signup: (email: string, password: string, name: string, mobileNo?: string) => Promise<{ error?: string }>;
   socialLogin: (provider: 'google' | 'github') => Promise<{ error?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -37,8 +37,8 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Helper to decode JWT and extract user info (basic implementation)
-const decodeToken = (token: string): { sub?: string; email?: string } | null => {
+// Helper to decode JWT and extract user info
+const decodeToken = (token: string): { sub?: string; email?: string; userId?: number; role?: string } | null => {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -54,6 +54,17 @@ const decodeToken = (token: string): { sub?: string; email?: string } | null => 
   }
 };
 
+// Check if token is expired
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const decoded = decodeToken(token) as { exp?: number } | null;
+    if (!decoded?.exp) return true;
+    return Date.now() >= decoded.exp * 1000;
+  } catch {
+    return true;
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,11 +76,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const storedUser = localStorage.getItem('auth_user');
       
       if (token && storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch {
+        // Check if token is expired
+        if (isTokenExpired(token)) {
           clearAuthToken();
           localStorage.removeItem('auth_user');
+        } else {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch {
+            clearAuthToken();
+            localStorage.removeItem('auth_user');
+          }
         }
       }
       setIsLoading(false);
@@ -88,16 +105,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.login({ email, password });
       
       if (response.token) {
-        // Decode token to get user info
+        // Decode token to get additional info
         const decoded = decodeToken(response.token);
         
-        // Create user object (adjust based on your JWT payload structure)
+        // Create user object from AuthResponse
         const authUser: AuthUser = {
-          id: decoded?.sub || crypto.randomUUID(),
-          email: decoded?.email || email,
-          name: email.split('@')[0],
+          id: response.userId,
+          email: response.email,
+          name: response.email.split('@')[0], // Default name from email
           status: 'ACTIVE',
-          role: email.includes('admin') ? 'admin' : 'user', // Adjust based on actual role from JWT
+          role: decoded?.role === 'admin' ? 'admin' : 'user',
         };
         
         setUser(authUser);
@@ -105,7 +122,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return {};
       }
       
-      return { error: 'Login failed' };
+      return { error: response.message || 'Login failed' };
     } catch (err: unknown) {
       const error = err as { response?: { status?: number; data?: { message?: string } } };
       if (error.response?.status === 401) {
@@ -117,7 +134,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signup = async (email: string, password: string, name: string): Promise<{ error?: string }> => {
+  const signup = async (
+    email: string, 
+    password: string, 
+    name: string, 
+    mobileNo?: string
+  ): Promise<{ error?: string }> => {
     setIsLoading(true);
     try {
       if (!email || !password || !name) {
@@ -128,15 +150,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { error: 'Password must be at least 6 characters' };
       }
 
-      await authService.signup({
+      const response = await authService.register({
         name,
         email,
         password,
-        status: 'ACTIVE',
+        mobileNo,
       });
 
-      // Auto-login after signup
-      return await login(email, password);
+      if (response.token) {
+        // Auto-login after successful registration
+        const authUser: AuthUser = {
+          id: response.userId,
+          email: response.email,
+          name: name,
+          status: 'ACTIVE',
+          role: 'user',
+        };
+        
+        setUser(authUser);
+        localStorage.setItem('auth_user', JSON.stringify(authUser));
+        return {};
+      }
+
+      return { error: response.message || 'Registration failed' };
     } catch (err: unknown) {
       const error = err as { response?: { status?: number; data?: { message?: string } } };
       if (error.response?.status === 409) {
@@ -150,7 +186,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const socialLogin = async (provider: 'google' | 'github'): Promise<{ error?: string }> => {
     // Social login would require OAuth implementation on the backend
-    // For now, return an error indicating it's not implemented
     return { error: `${provider} login is not yet configured. Please use email/password.` };
   };
 
@@ -158,7 +193,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     authService.logout();
     setUser(null);
     localStorage.removeItem('auth_user');
-    localStorage.removeItem('auth_token');
   };
 
   return (

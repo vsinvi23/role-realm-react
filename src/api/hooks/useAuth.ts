@@ -1,15 +1,13 @@
 import { useState, useCallback } from 'react';
 import { authService } from '../services/authService';
-import { userService } from '../services/userService';
-import { AuthLoginRequest, AuthSignupRequest, UserResponse } from '../types';
-import { getAuthToken, clearAuthToken } from '../client';
+import { LoginRequest, RegisterRequest } from '../types';
 import { AxiosError } from 'axios';
 
 interface UseAuthReturn {
   isLoading: boolean;
   error: string | null;
-  login: (credentials: AuthLoginRequest) => Promise<boolean>;
-  signup: (data: AuthSignupRequest) => Promise<boolean>;
+  login: (credentials: LoginRequest) => Promise<boolean>;
+  register: (data: RegisterRequest) => Promise<boolean>;
   logout: () => void;
   clearError: () => void;
 }
@@ -18,7 +16,7 @@ export const useAuthApi = (): UseAuthReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const login = useCallback(async (credentials: AuthLoginRequest): Promise<boolean> => {
+  const login = useCallback(async (credentials: LoginRequest): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -37,18 +35,18 @@ export const useAuthApi = (): UseAuthReturn => {
     }
   }, []);
 
-  const signup = useCallback(async (data: AuthSignupRequest): Promise<boolean> => {
+  const register = useCallback(async (data: RegisterRequest): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     try {
-      await authService.signup(data);
+      await authService.register(data);
       return true;
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       if (axiosError.response?.status === 409) {
         setError('Email already exists');
       } else {
-        setError(axiosError.response?.data?.message || 'Signup failed. Please try again.');
+        setError(axiosError.response?.data?.message || 'Registration failed. Please try again.');
       }
       return false;
     } finally {
@@ -68,7 +66,7 @@ export const useAuthApi = (): UseAuthReturn => {
     isLoading,
     error,
     login,
-    signup,
+    register,
     logout,
     clearError,
   };
