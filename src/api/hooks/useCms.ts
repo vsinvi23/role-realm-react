@@ -49,12 +49,38 @@ export const useUploadCmsContent = () => {
 };
 
 /**
+ * Hook to upload thumbnail to a CMS item
+ */
+export const useUploadCmsThumbnail = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => 
+      cmsService.uploadThumbnail(id, file),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
+    },
+  });
+};
+
+/**
  * Hook to download CMS content
  */
 export const useDownloadCmsContent = (id: number, enabled = false) => {
   return useQuery({
     queryKey: [...cmsKeys.detail(id), 'content'],
     queryFn: () => cmsService.downloadContent(id),
+    enabled: enabled && id > 0,
+  });
+};
+
+/**
+ * Hook to download CMS thumbnail
+ */
+export const useDownloadCmsThumbnail = (id: number, enabled = false) => {
+  return useQuery({
+    queryKey: [...cmsKeys.detail(id), 'thumbnail'],
+    queryFn: () => cmsService.downloadThumbnail(id),
     enabled: enabled && id > 0,
   });
 };

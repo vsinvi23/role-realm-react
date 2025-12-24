@@ -117,6 +117,10 @@ export interface CmsResponseDto {
   contentName: string;
   contentType: string;
   contentSize: number;
+  thumbnailLocation?: string;
+  thumbnailName?: string;
+  thumbnailType?: string;
+  thumbnailSize?: number;
   createdBy: number;
   createdAt: string;
   updatedAt: string;
