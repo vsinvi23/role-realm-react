@@ -1,15 +1,37 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { useCmsList } from '@/api/hooks/useCms';
+import { useCmsList, useDeleteCms, usePublishCms, useSendCmsBack } from '@/api/hooks/useCms';
 import { CmsResponseDto, CmsStatus } from '@/api/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Pencil, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { 
+  Search, 
+  Plus, 
+  Pencil, 
+  Loader2, 
+  Trash2, 
+  CheckCircle, 
+  MessageSquare, 
+  MoreHorizontal,
+  Undo2 
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 const getStatusVariant = (status: CmsStatus) => {
   switch (status) {
@@ -26,11 +48,20 @@ const getStatusVariant = (status: CmsStatus) => {
 
 export default function ArticleManagement() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(0);
   const pageSize = 10;
 
-  const { data: cmsData, isLoading, error } = useCmsList({ page, size: pageSize });
+  // Dialogs state
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; article: CmsResponseDto | null }>({ open: false, article: null });
+  const [sendBackDialog, setSendBackDialog] = useState<{ open: boolean; article: CmsResponseDto | null }>({ open: false, article: null });
+  const [comment, setComment] = useState('');
+
+  const { data: cmsData, isLoading, error, refetch } = useCmsList({ page, size: pageSize });
+  const deleteCms = useDeleteCms();
+  const publishCms = usePublishCms();
+  const sendBackCms = useSendCmsBack();
 
   // Filter for articles only and apply search
   const q = searchQuery.trim().toLowerCase();
@@ -43,6 +74,50 @@ export default function ArticleManagement() {
   });
 
   const totalPages = Math.ceil((cmsData?.totalElements || 0) / pageSize);
+
+  const handleDelete = async () => {
+    if (!deleteDialog.article) return;
+    try {
+      await deleteCms.mutateAsync(deleteDialog.article.id);
+      toast.success('Article deleted');
+      setDeleteDialog({ open: false, article: null });
+      refetch();
+    } catch {
+      toast.error('Failed to delete article');
+    }
+  };
+
+  const handlePublish = async (article: CmsResponseDto) => {
+    try {
+      await publishCms.mutateAsync({ id: article.id });
+      toast.success('Article published');
+      refetch();
+    } catch {
+      toast.error('Failed to publish article');
+    }
+  };
+
+  const handleSendBack = async () => {
+    if (!sendBackDialog.article || !comment.trim()) {
+      toast.error('Please enter a comment');
+      return;
+    }
+    try {
+      await sendBackCms.mutateAsync({
+        id: sendBackDialog.article.id,
+        data: {
+          reviewerId: user?.id || 1,
+          comment: comment.trim(),
+        },
+      });
+      toast.success('Article sent back to draft');
+      setSendBackDialog({ open: false, article: null });
+      setComment('');
+      refetch();
+    } catch {
+      toast.error('Failed to send back article');
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -89,8 +164,9 @@ export default function ArticleManagement() {
                   <TableRow>
                     <TableHead>Title</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Reviewer Comment</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -98,24 +174,66 @@ export default function ArticleManagement() {
                     <TableRow key={article.id}>
                       <TableCell className="font-medium">
                         {article.title || 'Untitled'}
+                        {article.description && (
+                          <p className="text-xs text-muted-foreground truncate max-w-xs">
+                            {article.description}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusVariant(article.status)}>
                           {article.status}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                        {article.reviewerComment || '-'}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {format(new Date(article.createdAt), 'PP')}
                       </TableCell>
                       <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => navigate(`/articles/create?id=${article.id}`)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-background border">
+                            <DropdownMenuItem onClick={() => navigate(`/articles/create?edit=${article.id}`)}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            
+                            {article.status === 'REVIEW' && (
+                              <>
+                                <DropdownMenuItem onClick={() => handlePublish(article)}>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Publish
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSendBackDialog({ open: true, article })}>
+                                  <Undo2 className="w-4 h-4 mr-2" />
+                                  Send Back
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            
+                            {article.reviewerComment && (
+                              <DropdownMenuItem onClick={() => toast.info(article.reviewerComment || 'No comment')}>
+                                <MessageSquare className="w-4 h-4 mr-2" />
+                                View Comment
+                              </DropdownMenuItem>
+                            )}
+                            
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDeleteDialog({ open: true, article })}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -149,6 +267,60 @@ export default function ArticleManagement() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, article: open ? deleteDialog.article : null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Article</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deleteDialog.article?.title || 'Untitled'}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog({ open: false, article: null })}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteCms.isPending}>
+              {deleteCms.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Back Dialog with Comment */}
+      <Dialog open={sendBackDialog.open} onOpenChange={(open) => { setSendBackDialog({ open, article: open ? sendBackDialog.article : null }); if (!open) setComment(''); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Back to Draft</DialogTitle>
+            <DialogDescription>
+              Add a comment explaining why this article needs revision.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="comment">Reviewer Comment *</Label>
+              <Textarea
+                id="comment"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Please explain what needs to be revised..."
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setSendBackDialog({ open: false, article: null }); setComment(''); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleSendBack} disabled={sendBackCms.isPending || !comment.trim()}>
+              {sendBackCms.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Send Back
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
