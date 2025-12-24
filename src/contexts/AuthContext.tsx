@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { authService } from '@/api/services';
-import { getAuthToken, clearAuthToken } from '@/api/client';
+import { 
+  getAuthToken, 
+  clearAllAuthData, 
+  setUserData, 
+  getUserData,
+  isAuthenticated as checkIsAuthenticated 
+} from '@/api/client';
 import { UserStatus } from '@/api/types';
 
 interface AuthUser {
@@ -38,7 +44,7 @@ interface AuthProviderProps {
 }
 
 // Helper to decode JWT and extract user info
-const decodeToken = (token: string): { sub?: string; email?: string; userId?: number; role?: string } | null => {
+const decodeToken = (token: string): { sub?: string; email?: string; userId?: number; role?: string; exp?: number } | null => {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -54,45 +60,62 @@ const decodeToken = (token: string): { sub?: string; email?: string; userId?: nu
   }
 };
 
-// Check if token is expired
-const isTokenExpired = (token: string): boolean => {
-  try {
-    const decoded = decodeToken(token) as { exp?: number } | null;
-    if (!decoded?.exp) return true;
-    return Date.now() >= decoded.exp * 1000;
-  } catch {
-    return true;
-  }
-};
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check for existing session on mount
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = getAuthToken();
-      const storedUser = localStorage.getItem('auth_user');
-      
-      if (token && storedUser) {
-        // Check if token is expired
-        if (isTokenExpired(token)) {
-          clearAuthToken();
-          localStorage.removeItem('auth_user');
+    const checkAuth = () => {
+      // Use the centralized auth check
+      if (checkIsAuthenticated()) {
+        const storedUser = getUserData<AuthUser>();
+        if (storedUser) {
+          setUser(storedUser);
         } else {
-          try {
-            setUser(JSON.parse(storedUser));
-          } catch {
-            clearAuthToken();
-            localStorage.removeItem('auth_user');
-          }
+          // Token exists but no user data - clear everything
+          clearAllAuthData();
         }
       }
       setIsLoading(false);
     };
 
     checkAuth();
+  }, []);
+
+  // Set up token expiry checker
+  useEffect(() => {
+    if (!user) return;
+
+    const token = getAuthToken();
+    if (!token) return;
+
+    const decoded = decodeToken(token);
+    if (!decoded?.exp) return;
+
+    // Calculate time until expiry
+    const expiresAt = decoded.exp * 1000;
+    const now = Date.now();
+    const timeUntilExpiry = expiresAt - now;
+
+    if (timeUntilExpiry <= 0) {
+      // Token already expired
+      handleLogout();
+      return;
+    }
+
+    // Set timer to logout when token expires
+    const timer = setTimeout(() => {
+      handleLogout();
+    }, timeUntilExpiry);
+
+    return () => clearTimeout(timer);
+  }, [user]);
+
+  const handleLogout = useCallback(() => {
+    authService.logout();
+    setUser(null);
+    clearAllAuthData();
   }, []);
 
   const login = async (email: string, password: string): Promise<{ error?: string }> => {
@@ -118,7 +141,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         
         setUser(authUser);
-        localStorage.setItem('auth_user', JSON.stringify(authUser));
+        setUserData(authUser);
         return {};
       }
       
@@ -168,7 +191,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         
         setUser(authUser);
-        localStorage.setItem('auth_user', JSON.stringify(authUser));
+        setUserData(authUser);
         return {};
       }
 
@@ -189,12 +212,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return { error: `${provider} login is not yet configured. Please use email/password.` };
   };
 
-  const logout = () => {
-    authService.logout();
-    setUser(null);
-    localStorage.removeItem('auth_user');
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -203,7 +220,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         login,
         signup,
         socialLogin,
-        logout,
+        logout: handleLogout,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
       }}
