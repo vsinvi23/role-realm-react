@@ -20,6 +20,17 @@ export const useCmsList = (params?: CmsQueryParams) => {
 };
 
 /**
+ * Hook to fetch a single CMS item by ID
+ */
+export const useCmsById = (id: number, enabled = true) => {
+  return useQuery({
+    queryKey: cmsKeys.detail(id),
+    queryFn: () => cmsService.getById(id),
+    enabled: enabled && id > 0,
+  });
+};
+
+/**
  * Hook to create a new CMS item
  */
 export const useCreateCms = () => {
@@ -50,6 +61,20 @@ export const useUpdateCms = () => {
 };
 
 /**
+ * Hook to delete a CMS item
+ */
+export const useDeleteCms = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: number) => cmsService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cmsKeys.all });
+    },
+  });
+};
+
+/**
  * Hook to upload content to a CMS item
  */
 export const useUploadCmsContent = () => {
@@ -60,6 +85,23 @@ export const useUploadCmsContent = () => {
       cmsService.uploadContent(id, file),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: cmsKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to upload thumbnail to a CMS item
+ */
+export const useUploadCmsThumbnail = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => 
+      cmsService.uploadThumbnail(id, file),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: cmsKeys.all });
     },
   });
 };
@@ -82,7 +124,7 @@ export const useSubmitCmsForReview = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CmsSubmitRequest }) => 
+    mutationFn: ({ id, data }: { id: number; data?: CmsSubmitRequest }) => 
       cmsService.submitForReview(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
@@ -98,7 +140,7 @@ export const usePublishCms = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CmsPublishRequest }) => 
+    mutationFn: ({ id, data }: { id: number; data?: CmsPublishRequest }) => 
       cmsService.publish(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });

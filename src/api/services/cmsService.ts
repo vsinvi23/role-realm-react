@@ -8,7 +8,6 @@ import {
   CmsSubmitRequest,
   CmsPublishRequest,
   CmsSendBackRequest,
-  StoredFileInfo,
 } from '../types';
 
 const CMS_BASE = '/api/cms';
@@ -30,7 +29,16 @@ export const cmsService = {
         size: params?.size ?? 10,
       },
     });
-    return response.data.data || { items: [], total: 0, currentPage: 0, pageSize: 10 };
+    return response.data.data || { items: [], totalElements: 0, currentPage: 0, pageSize: 10 };
+  },
+
+  /**
+   * Get CMS by ID
+   * GET /api/cms/:id
+   */
+  getById: async (id: number): Promise<CmsResponseDto> => {
+    const response = await apiClient.get<ApiResponse<CmsResponseDto>>(`${CMS_BASE}/${id}`);
+    return response.data.data!;
   },
 
   /**
@@ -43,7 +51,7 @@ export const cmsService = {
   },
 
   /**
-   * Update CMS metadata (title, description)
+   * Update CMS metadata (title, description, categoryId, type)
    * PUT /api/cms/:id
    */
   update: async (id: number, data: CmsUpdateDto): Promise<CmsResponseDto> => {
@@ -52,14 +60,22 @@ export const cmsService = {
   },
 
   /**
+   * Delete CMS item
+   * DELETE /api/cms/:id
+   */
+  delete: async (id: number): Promise<void> => {
+    await apiClient.delete(`${CMS_BASE}/${id}`);
+  },
+
+  /**
    * Upload content file for a CMS item
    * POST /api/cms/:id/upload
    */
-  uploadContent: async (id: number, file: File): Promise<StoredFileInfo> => {
+  uploadContent: async (id: number, file: File): Promise<CmsResponseDto> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await apiClient.post<ApiResponse<StoredFileInfo>>(
+    const response = await apiClient.post<ApiResponse<CmsResponseDto>>(
       `${CMS_BASE}/${id}/upload`,
       formData,
       {
@@ -74,7 +90,6 @@ export const cmsService = {
   /**
    * Download content for a CMS item
    * GET /api/cms/:id/content
-   * @returns Blob of the file content
    */
   downloadContent: async (id: number): Promise<Blob> => {
     const response = await apiClient.get<Blob>(`${CMS_BASE}/${id}/content`, {
@@ -84,13 +99,44 @@ export const cmsService = {
   },
 
   /**
+   * Upload thumbnail for a CMS item
+   * POST /api/cms/:id/thumbnail
+   */
+  uploadThumbnail: async (id: number, file: File): Promise<CmsResponseDto> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<ApiResponse<CmsResponseDto>>(
+      `${CMS_BASE}/${id}/thumbnail`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data.data!;
+  },
+
+  /**
+   * Get thumbnail for a CMS item
+   * GET /api/cms/:id/thumbnail
+   */
+  getThumbnail: async (id: number): Promise<Blob> => {
+    const response = await apiClient.get<Blob>(`${CMS_BASE}/${id}/thumbnail`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  /**
    * Submit CMS for review
    * POST /api/cms/:id/submit
    */
-  submitForReview: async (id: number, data: CmsSubmitRequest): Promise<CmsResponseDto> => {
+  submitForReview: async (id: number, data?: CmsSubmitRequest): Promise<CmsResponseDto> => {
     const response = await apiClient.post<ApiResponse<CmsResponseDto>>(
       `${CMS_BASE}/${id}/submit`,
-      data
+      data || {}
     );
     return response.data.data!;
   },
@@ -99,10 +145,10 @@ export const cmsService = {
    * Publish CMS item (admin only)
    * POST /api/cms/:id/publish
    */
-  publish: async (id: number, data: CmsPublishRequest): Promise<CmsResponseDto> => {
+  publish: async (id: number, data?: CmsPublishRequest): Promise<CmsResponseDto> => {
     const response = await apiClient.post<ApiResponse<CmsResponseDto>>(
       `${CMS_BASE}/${id}/publish`,
-      data
+      data || {}
     );
     return response.data.data!;
   },

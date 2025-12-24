@@ -1,26 +1,27 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useCmsList } from '@/api/hooks/useCms';
 import { CmsResponseDto, CmsStatus } from '@/api/types';
-import { WorkflowStatus } from '@/types/content';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Plus, Grid, List, Pencil, Eye, Loader2, BookOpen, Calendar } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Search, Plus, Grid, List, Pencil, Loader2, BookOpen, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
-// Map CMS status to workflow status for StatusBadge
-const mapCmsStatus = (status: CmsStatus): WorkflowStatus => {
-  const statusMap: Record<CmsStatus, WorkflowStatus> = {
-    'DRAFT': 'draft',
-    'PENDING_REVIEW': 'submitted',
-    'PUBLISHED': 'published',
-    'REJECTED': 'rejected',
-  };
-  return statusMap[status] || 'draft';
+const getStatusVariant = (status: CmsStatus) => {
+  switch (status) {
+    case 'DRAFT':
+      return 'secondary';
+    case 'REVIEW':
+      return 'outline';
+    case 'PUBLISHED':
+      return 'default';
+    default:
+      return 'secondary';
+  }
 };
 
 export default function CourseManagement() {
@@ -30,7 +31,6 @@ export default function CourseManagement() {
   const [page, setPage] = useState(0);
   const pageSize = 10;
 
-  // Fetch CMS items with type COURSE
   const { data: cmsData, isLoading, error } = useCmsList({ page, size: pageSize });
 
   // Filter for courses only and apply search
@@ -43,7 +43,7 @@ export default function CourseManagement() {
     return title.includes(q) || desc.includes(q);
   });
 
-  const totalPages = Math.ceil((cmsData?.total || 0) / pageSize);
+  const totalPages = Math.ceil((cmsData?.totalElements || 0) / pageSize);
 
   return (
     <DashboardLayout>
@@ -51,7 +51,7 @@ export default function CourseManagement() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Course Management</h1>
-            <p className="text-muted-foreground">Create and manage courses with hierarchical content.</p>
+            <p className="text-muted-foreground">Create and manage courses.</p>
           </div>
           <Button onClick={() => navigate('/courses/create')}>
             <Plus className="w-4 h-4 mr-2" />
@@ -112,32 +112,28 @@ export default function CourseManagement() {
                         {course.title || 'Untitled Course'}
                       </CardTitle>
                     </div>
-                    <StatusBadge status={mapCmsStatus(course.status)} size="sm" />
+                    <Badge variant={getStatusVariant(course.status)}>
+                      {course.status}
+                    </Badge>
                   </div>
                   <CardDescription className="line-clamp-2">
-                    {course.description || 'No description available'}
+                    {course.description || 'No description'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                     <Calendar className="w-4 h-4" />
-                    <span>Created {format(new Date(course.createdAt), 'PP')}</span>
+                    <span>{format(new Date(course.createdAt), 'PP')}</span>
                   </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => navigate(`/courses/create?id=${course.id}`)}
-                    >
-                      <Pencil className="w-4 h-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Eye className="w-4 h-4 mr-1" />
-                      View
-                    </Button>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => navigate(`/courses/create?id=${course.id}`)}
+                  >
+                    <Pencil className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -149,11 +145,9 @@ export default function CourseManagement() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title</TableHead>
-                    <TableHead>Description</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead>Updated</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableHead className="w-[80px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -162,32 +156,23 @@ export default function CourseManagement() {
                       <TableCell className="font-medium">
                         {course.title || 'Untitled'}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                        {course.description || '-'}
-                      </TableCell>
                       <TableCell>
-                        <StatusBadge status={mapCmsStatus(course.status)} size="sm" />
+                        <Badge variant={getStatusVariant(course.status)}>
+                          {course.status}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {format(new Date(course.createdAt), 'PP')}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(course.updatedAt), 'PP')}
-                      </TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8"
-                            onClick={() => navigate(`/courses/create?id=${course.id}`)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => navigate(`/courses/create?id=${course.id}`)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -197,7 +182,6 @@ export default function CourseManagement() {
           </Card>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2">
             <Button
