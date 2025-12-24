@@ -1,216 +1,114 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { ContentPreviewModal } from '@/components/shared/ContentPreviewModal';
+import { RichContentEditor } from '@/components/articles/RichContentEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Save,
-  Eye,
   Send,
-  BookOpen,
   ArrowLeft,
-  Plus,
-  X,
-  Image,
-  GraduationCap,
-  Clock,
-  Upload,
-  File,
-  Video,
-  FileText,
-  FileImage,
+  BookOpen,
   Loader2,
-  Download,
-  Trash2,
-  Paperclip,
-  Film,
-  Users,
+  Image as ImageIcon,
 } from 'lucide-react';
-import { Course, WorkflowStatus, Attachment } from '@/types/content';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addCourse, updateCourse } from '@/store/slices/courseSlice';
-import { useCreateCms, useUploadCmsContent } from '@/api/hooks/useCms';
+import { ContentBlock } from '@/types/content';
+import { useCreateCms, useUpdateCms, useUploadCmsContent, useUploadCmsThumbnail, useCmsById, useSubmitCmsForReview } from '@/api/hooks/useCms';
 import { useCategories } from '@/api/hooks/useCategories';
-import { useGroupsQuery } from '@/api/hooks/useGroups';
-import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
 
-const LANGUAGES = [
-  { value: 'English', label: 'English' },
-  { value: 'Spanish', label: 'Spanish' },
-  { value: 'Hindi', label: 'Hindi' },
-  { value: 'French', label: 'French' },
-  { value: 'German', label: 'German' },
-];
+/**
+ * Convert content blocks to HTML string
+ */
+function contentBlocksToHtml(blocks: ContentBlock[]): string {
+  return blocks.map(block => {
+    switch (block.type) {
+      case 'heading1':
+        return `<h1>${escapeHtml(block.content)}</h1>`;
+      case 'heading2':
+        return `<h2>${escapeHtml(block.content)}</h2>`;
+      case 'heading3':
+        return `<h3>${escapeHtml(block.content)}</h3>`;
+      case 'paragraph':
+        return `<p>${escapeHtml(block.content)}</p>`;
+      case 'quote':
+        return `<blockquote>${escapeHtml(block.content)}</blockquote>`;
+      case 'code':
+        return `<pre><code class="language-${block.codeData?.language || 'plaintext'}">${escapeHtml(block.codeData?.code || '')}</code></pre>`;
+      case 'image':
+        return `<figure><img src="${escapeHtml(block.imageUrl || '')}" alt="${escapeHtml(block.imageAlt || '')}" />${block.imageAlt ? `<figcaption>${escapeHtml(block.imageAlt)}</figcaption>` : ''}</figure>`;
+      case 'list':
+        return `<ul>${block.listItems?.map(item => `<li>${escapeHtml(item)}</li>`).join('') || ''}</ul>`;
+      case 'ordered-list':
+        return `<ol>${block.listItems?.map(item => `<li>${escapeHtml(item)}</li>`).join('') || ''}</ol>`;
+      case 'divider':
+        return '<hr />';
+      default:
+        return '';
+    }
+  }).join('\n');
+}
 
-const LEVELS = [
-  { value: 'beginner', label: 'Beginner' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'advanced', label: 'Advanced' },
-];
-
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
-
-const getFileIcon = (type: string) => {
-  if (type.startsWith('image/')) return FileImage;
-  if (type.startsWith('video/')) return Video;
-  if (type.includes('pdf') || type.includes('document')) return FileText;
-  return File;
-};
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 export default function CourseCreator() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
-  const dispatch = useAppDispatch();
-  const { courses } = useAppSelector((state) => state.courses);
-  const { user } = useAuth();
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   // API hooks
   const createCms = useCreateCms();
+  const updateCms = useUpdateCms();
   const uploadContent = useUploadCmsContent();
+  const uploadThumbnail = useUploadCmsThumbnail();
+  const submitForReview = useSubmitCmsForReview();
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
-  const { data: groupsData, isLoading: groupsLoading } = useGroupsQuery();
-  
+  const { data: existingCms } = useCmsById(editId ? parseInt(editId) : 0, !!editId);
+
   const categories = categoriesData || [];
-  const groups = groupsData?.items || [];
 
-  const existingCourse = editId ? courses.find((c) => c.id === editId) : null;
-
-  const [title, setTitle] = useState(existingCourse?.title || '');
-  const [description, setDescription] = useState(existingCourse?.description || '');
-  const [categoryId, setCategoryId] = useState(existingCourse?.categoryId || '');
-  const [selectedGroup, setSelectedGroup] = useState('');
-  const [tags, setTags] = useState<string[]>(existingCourse?.tags || []);
-  const [newTag, setNewTag] = useState('');
-  const [thumbnail, setThumbnail] = useState(existingCourse?.thumbnail || '');
-  const [duration, setDuration] = useState(existingCourse?.duration?.toString() || '0');
-  const [language, setLanguage] = useState(existingCourse?.language || 'English');
-  const [instructor, setInstructor] = useState(existingCourse?.instructor || '');
-  const [level, setLevel] = useState('beginner');
+  // Form state - only CMS required fields
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([]);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('details');
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [cmsId, setCmsId] = useState<number | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
 
-  // Groups are fetched automatically via React Query
+  // Load existing data if editing
+  useState(() => {
+    if (existingCms) {
+      setTitle(existingCms.title || '');
+      setDescription(existingCms.description || '');
+      setCategoryId(existingCms.categoryId?.toString() || '');
+    }
+  });
 
-  const handleAddTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setTags([...tags, newTag.trim()]);
-      setNewTag('');
+  const handleThumbnailSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setThumbnailFile(file);
+      setThumbnailPreview(URL.createObjectURL(file));
+    } else {
+      toast.error('Please select an image file');
     }
   };
 
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((t) => t !== tagToRemove));
-  };
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files);
-    handleFileUpload(files);
-  }, []);
-
-  const handleFileUpload = async (files: File[]) => {
-    const maxSize = 100 * 1024 * 1024; // 100MB for videos
-    
-    for (const file of files) {
-      if (file.size > maxSize) {
-        toast.error(`${file.name} exceeds 100MB limit`);
-        continue;
-      }
-
-      const fileId = `${file.name}-${Date.now()}`;
-      setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
-
-      try {
-        const progressInterval = setInterval(() => {
-          setUploadProgress(prev => {
-            const current = prev[fileId] || 0;
-            if (current >= 90) return prev;
-            return { ...prev, [fileId]: current + 10 };
-          });
-        }, 200);
-
-        if (cmsId) {
-          await uploadContent.mutateAsync({ id: cmsId, file });
-        }
-
-        clearInterval(progressInterval);
-        setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
-
-        const newAttachment: Attachment = {
-          id: fileId,
-          name: file.name,
-          url: URL.createObjectURL(file),
-          size: file.size,
-          type: file.type,
-          uploadedAt: new Date().toISOString(),
-        };
-        setAttachments(prev => [...prev, newAttachment]);
-
-        if (file.type.startsWith('image/') && !thumbnail) {
-          setThumbnail(newAttachment.url);
-        }
-
-        setTimeout(() => {
-          setUploadProgress(prev => {
-            const { [fileId]: _, ...rest } = prev;
-            return rest;
-          });
-        }, 500);
-
-        toast.success(`${file.name} uploaded successfully`);
-      } catch (error) {
-        setUploadProgress(prev => {
-          const { [fileId]: _, ...rest } = prev;
-          return rest;
-        });
-        toast.error(`Failed to upload ${file.name}`);
-      }
-    }
-  };
-
-  const handleRemoveAttachment = (id: string) => {
-    setAttachments(attachments.filter((a) => a.id !== id));
-  };
-
-  const handleSave = async (status: WorkflowStatus = 'draft') => {
-    if (!title.trim()) {
-      toast.error('Title is required');
-      return;
-    }
+  const handleSave = async (submitForReviewAfter = false) => {
     if (!categoryId) {
       toast.error('Please select a category');
       return;
@@ -218,38 +116,49 @@ export default function CourseCreator() {
 
     setIsSaving(true);
     try {
-      if (!cmsId && !existingCourse) {
-        const cmsResponse = await createCms.mutateAsync({
+      let cmsId: number;
+
+      // Create or update CMS record
+      if (editId) {
+        cmsId = parseInt(editId);
+        await updateCms.mutateAsync({
+          id: cmsId,
+          data: {
+            type: 'COURSE',
+            categoryId: parseInt(categoryId),
+            title: title || undefined,
+            description: description || undefined,
+          },
+        });
+      } else {
+        const response = await createCms.mutateAsync({
           type: 'COURSE',
           categoryId: parseInt(categoryId),
-          createdBy: user?.id || 1,
+          title: title || undefined,
+          description: description || undefined,
         });
-        setCmsId(cmsResponse.id);
+        cmsId = response.id;
       }
 
-      const courseData: Course = {
-        id: existingCourse?.id || `course-${Date.now()}`,
-        title,
-        description,
-        categoryId,
-        categoryPath: categoryId ? [categoryId] : [],
-        thumbnail,
-        instructor: instructor || user?.name || 'Current User',
-        duration: parseInt(duration) || 0,
-        status,
-        sections: existingCourse?.sections || [],
-        tags,
-        language,
-        createdAt: existingCourse?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      // Generate HTML from content blocks and upload
+      if (contentBlocks.length > 0) {
+        const htmlContent = contentBlocksToHtml(contentBlocks);
+        const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+        const htmlFile = new File([htmlBlob], 'content.html', { type: 'text/html' });
+        await uploadContent.mutateAsync({ id: cmsId, file: htmlFile });
+      }
 
-      if (existingCourse) {
-        dispatch(updateCourse(courseData));
-        toast.success('Course updated successfully');
+      // Upload thumbnail if selected
+      if (thumbnailFile) {
+        await uploadThumbnail.mutateAsync({ id: cmsId, file: thumbnailFile });
+      }
+
+      // Submit for review if requested
+      if (submitForReviewAfter) {
+        await submitForReview.mutateAsync({ id: cmsId });
+        toast.success('Course submitted for review');
       } else {
-        dispatch(addCourse(courseData));
-        toast.success('Course created successfully');
+        toast.success(editId ? 'Course updated' : 'Course saved as draft');
       }
 
       navigate('/courses');
@@ -260,41 +169,44 @@ export default function CourseCreator() {
     }
   };
 
-  const videoCount = attachments.filter(a => a.type.startsWith('video/')).length;
-  const documentCount = attachments.filter(a => !a.type.startsWith('video/') && !a.type.startsWith('image/')).length;
-  const imageCount = attachments.filter(a => a.type.startsWith('image/')).length;
-
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/courses')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
+            <Button variant="ghost" size="sm" onClick={() => navigate('/courses')} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />
               Back
             </Button>
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">
-                {existingCourse ? 'Edit Course' : 'Create Course'}
+              <h1 className="text-2xl font-bold text-foreground">
+                {editId ? 'Edit Course' : 'Create Course'}
               </h1>
               <p className="text-sm text-muted-foreground">
-                Set up your course details, upload videos, and add resources
+                Add title, description, category and content
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => setShowPreview(true)} className="flex-1 sm:flex-none">
-              <Eye className="w-4 h-4 mr-2" />
-              Preview
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSave(false)}
+              disabled={isSaving}
+              className="flex-1 sm:flex-none gap-2"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save Draft
             </Button>
-            <Button variant="outline" onClick={() => handleSave('draft')} disabled={isSaving} className="flex-1 sm:flex-none">
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save Draft'}
-            </Button>
-            <Button onClick={() => handleSave('submitted')} disabled={isSaving} className="flex-1 sm:flex-none">
-              <Send className="w-4 h-4 mr-2" />
-              Submit
+            <Button
+              size="sm"
+              onClick={() => handleSave(true)}
+              disabled={isSaving}
+              className="flex-1 sm:flex-none gap-2"
+            >
+              <Send className="w-4 h-4" />
+              Submit for Review
             </Button>
           </div>
         </div>
@@ -302,465 +214,113 @@ export default function CourseCreator() {
         {/* Main Content */}
         <div className="grid grid-cols-12 gap-6">
           {/* Editor Area */}
-          <div className="col-span-12 lg:col-span-8">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4 flex-wrap">
-                <TabsTrigger value="details" className="gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Details
-                </TabsTrigger>
-                <TabsTrigger value="media" className="gap-2">
-                  <Film className="w-4 h-4" />
-                  Videos & Media
-                </TabsTrigger>
-                <TabsTrigger value="resources" className="gap-2">
-                  <Paperclip className="w-4 h-4" />
-                  Resources
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="details" className="space-y-6">
-                {/* Title & Description */}
-                <Card>
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Course Title *</Label>
-                      <Input
-                        id="title"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Enter a compelling course title..."
-                        className="text-lg"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Describe what students will learn in this course..."
-                        rows={5}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Course Details */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <GraduationCap className="w-5 h-5" />
-                      Course Details
-                    </CardTitle>
-                    <CardDescription>
-                      Configure course settings and metadata
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Category *</Label>
-                        {categoriesLoading ? (
-                          <Skeleton className="h-10 w-full" />
-                        ) : (
-                          <Select value={categoryId} onValueChange={setCategoryId}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-background border z-50">
-                              {categories?.map((cat) => (
-                                <SelectItem key={cat.id} value={cat.id.toString()}>
-                                  {cat.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Language</Label>
-                        <Select value={language} onValueChange={setLanguage}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select language" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border z-50">
-                            {LANGUAGES.map((lang) => (
-                              <SelectItem key={lang.value} value={lang.value}>
-                                {lang.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    
-                    {/* User Group Assignment */}
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Assign to Group
-                      </Label>
-                      {groupsLoading ? (
-                        <Skeleton className="h-10 w-full" />
-                      ) : (
-                        <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select user group (optional)" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border z-50">
-                            {groups.map((group) => (
-                              <SelectItem key={group.id} value={group.id.toString()}>
-                                {group.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>Level</Label>
-                        <Select value={level} onValueChange={setLevel}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select level" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border z-50">
-                            {LEVELS.map((lvl) => (
-                              <SelectItem key={lvl.value} value={lvl.value}>
-                                {lvl.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="duration" className="flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          Duration (minutes)
-                        </Label>
-                        <Input
-                          id="duration"
-                          type="number"
-                          value={duration}
-                          onChange={(e) => setDuration(e.target.value)}
-                          placeholder="e.g., 120"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="instructor">Instructor</Label>
-                        <Input
-                          id="instructor"
-                          value={instructor}
-                          onChange={(e) => setInstructor(e.target.value)}
-                          placeholder="Instructor name"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="media" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Upload className="w-5 h-5" />
-                      Upload Course Videos
-                    </CardTitle>
-                    <CardDescription>
-                      Upload video lessons for your course (MP4, WebM, MOV - max 100MB each)
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Drop Zone */}
-                    <div
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      className={cn(
-                        'border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer',
-                        isDragging 
-                          ? 'border-primary bg-primary/5 scale-[1.02]' 
-                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                      )}
-                    >
-                      <input
-                        type="file"
-                        multiple
-                        onChange={(e) => e.target.files && handleFileUpload(Array.from(e.target.files))}
-                        className="hidden"
-                        id="video-upload"
-                        accept="video/*,image/*"
-                      />
-                      <label htmlFor="video-upload" className="cursor-pointer">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Film className="w-8 h-8 text-primary" />
-                        </div>
-                        <p className="text-lg font-medium mb-1">
-                          Drop videos here or click to upload
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Supports MP4, WebM, MOV, and image thumbnails
-                        </p>
-                      </label>
-                    </div>
-
-                    {/* Supported formats */}
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      {['MP4', 'WebM', 'MOV', 'JPG', 'PNG'].map((format) => (
-                        <Badge key={format} variant="outline" className="text-xs">
-                          {format}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Upload Progress */}
-                    {Object.entries(uploadProgress).length > 0 && (
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium">Uploading...</p>
-                        {Object.entries(uploadProgress).map(([name, progress]) => (
-                          <div key={name} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{name.split('-')[0]}</p>
-                              <Progress value={progress} className="h-1.5 mt-1" />
-                            </div>
-                            <span className="text-xs text-muted-foreground">{progress}%</span>
-                          </div>
+          <div className="col-span-12 lg:col-span-8 space-y-6">
+            {/* Basic Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5" />
+                  Course Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter course title..."
+                    className="text-lg"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Brief description of the course..."
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Category *</Label>
+                  {categoriesLoading ? (
+                    <Skeleton className="h-10 w-full" />
+                  ) : (
+                    <Select value={categoryId} onValueChange={setCategoryId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border z-50">
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id.toString()}>
+                            {cat.name}
+                          </SelectItem>
                         ))}
-                      </div>
-                    )}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-                    {/* Uploaded Videos & Images */}
-                    {attachments.filter(a => a.type.startsWith('video/') || a.type.startsWith('image/')).length > 0 && (
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium flex items-center gap-2">
-                          <Video className="w-4 h-4" />
-                          Uploaded Media ({videoCount + imageCount})
-                        </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {attachments
-                            .filter(a => a.type.startsWith('video/') || a.type.startsWith('image/'))
-                            .map((attachment) => {
-                              const isVideo = attachment.type.startsWith('video/');
-                              const isImage = attachment.type.startsWith('image/');
-                              return (
-                                <div
-                                  key={attachment.id}
-                                  className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg group hover:shadow-sm transition-shadow"
-                                >
-                                  {isImage ? (
-                                    <div className="w-14 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
-                                      <img src={attachment.url} alt={attachment.name} className="w-full h-full object-cover" />
-                                    </div>
-                                  ) : (
-                                    <div className="w-14 h-10 rounded bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
-                                      <Video className="w-5 h-5 text-primary" />
-                                    </div>
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{attachment.name}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {formatFileSize(attachment.size)} • {isVideo ? 'Video' : 'Image'}
-                                    </p>
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
-                                      onClick={() => handleRemoveAttachment(attachment.id)}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="resources" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Paperclip className="w-5 h-5" />
-                      Course Resources
-                    </CardTitle>
-                    <CardDescription>
-                      Upload supplementary materials like PDFs, slides, and documents
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Drop Zone */}
-                    <div
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      className={cn(
-                        'border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer',
-                        isDragging 
-                          ? 'border-primary bg-primary/5 scale-[1.02]' 
-                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                      )}
-                    >
-                      <input
-                        type="file"
-                        multiple
-                        onChange={(e) => e.target.files && handleFileUpload(Array.from(e.target.files))}
-                        className="hidden"
-                        id="resource-upload"
-                        accept="application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip"
-                      />
-                      <label htmlFor="resource-upload" className="cursor-pointer">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                          <FileText className="w-8 h-8 text-primary" />
-                        </div>
-                        <p className="text-lg font-medium mb-1">
-                          Drop resources here or click to upload
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          PDFs, Word docs, Excel sheets, PowerPoint, ZIP files
-                        </p>
-                      </label>
-                    </div>
-
-                    {/* Supported formats */}
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      {['PDF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'PPT', 'PPTX', 'ZIP'].map((format) => (
-                        <Badge key={format} variant="outline" className="text-xs">
-                          {format}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Uploaded Resources */}
-                    {attachments.filter(a => !a.type.startsWith('video/') && !a.type.startsWith('image/')).length > 0 && (
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium flex items-center gap-2">
-                          <File className="w-4 h-4" />
-                          Uploaded Resources ({documentCount})
-                        </p>
-                        <div className="space-y-2">
-                          {attachments
-                            .filter(a => !a.type.startsWith('video/') && !a.type.startsWith('image/'))
-                            .map((attachment) => {
-                              const Icon = getFileIcon(attachment.type);
-                              return (
-                                <div
-                                  key={attachment.id}
-                                  className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg group hover:shadow-sm transition-shadow"
-                                >
-                                  <div className="w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                                    <Icon className="w-5 h-5 text-muted-foreground" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{attachment.name}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {formatFileSize(attachment.size)}
-                                    </p>
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => window.open(attachment.url, '_blank')}
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
-                                      onClick={() => handleRemoveAttachment(attachment.id)}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+            {/* Content Editor */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Content</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RichContentEditor
+                  blocks={contentBlocks}
+                  onChange={setContentBlocks}
+                />
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sidebar */}
           <div className="col-span-12 lg:col-span-4 space-y-6">
             {/* Thumbnail */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Image className="w-4 h-4" />
-                  Course Thumbnail
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5" />
+                  Thumbnail
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <Input
-                  value={thumbnail}
-                  onChange={(e) => setThumbnail(e.target.value)}
-                  placeholder="Enter image URL or upload in Media tab..."
+              <CardContent>
+                <input
+                  ref={thumbnailInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleThumbnailSelect}
                 />
-                {thumbnail && (
-                  <div className="relative aspect-video bg-muted rounded-lg overflow-hidden group">
+                {thumbnailPreview ? (
+                  <div className="relative">
                     <img
-                      src={thumbnail}
-                      alt="Thumbnail"
-                      className="w-full h-full object-cover"
+                      src={thumbnailPreview}
+                      alt="Thumbnail preview"
+                      className="w-full aspect-video object-cover rounded-lg"
                     />
                     <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => setThumbnail('')}
+                      variant="secondary"
+                      size="sm"
+                      className="absolute bottom-2 right-2"
+                      onClick={() => thumbnailInputRef.current?.click()}
                     >
-                      <X className="w-4 h-4" />
+                      Change
                     </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Tags */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Tags</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Add tag..."
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                  />
-                  <Button size="icon" onClick={handleAddTag}>
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-                {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="gap-1 pr-1">
-                        {tag}
-                        <button 
-                          onClick={() => handleRemoveTag(tag)}
-                          className="ml-1 hover:bg-muted rounded-full p-0.5"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    ))}
+                ) : (
+                  <div
+                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => thumbnailInputRef.current?.click()}
+                  >
+                    <ImageIcon className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Click to upload thumbnail</p>
                   </div>
                 )}
               </CardContent>
@@ -768,69 +328,24 @@ export default function CourseCreator() {
 
             {/* Quick Stats */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Content Summary</CardTitle>
+              <CardHeader>
+                <CardTitle>Summary</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Category</span>
-                    <span className="font-medium">
-                      {categories?.find((c) => c.id.toString() === categoryId)?.name || 'Not set'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Level</span>
-                    <Badge variant="outline" className="capitalize">{level}</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Language</span>
-                    <span className="font-medium">{language}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Duration</span>
-                    <span className="font-medium">{duration} min</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Videos</span>
-                    <span className="font-medium">{videoCount}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Resources</span>
-                    <span className="font-medium">{documentCount}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tags</span>
-                    <span className="font-medium">{tags.length}</span>
-                  </div>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Content Blocks</span>
+                  <span className="font-medium">{contentBlocks.length}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Category</span>
+                  <span className="font-medium">
+                    {categories.find(c => c.id.toString() === categoryId)?.name || 'Not selected'}
+                  </span>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
-
-        {/* Preview Modal */}
-        <ContentPreviewModal
-          open={showPreview}
-          onOpenChange={setShowPreview}
-          type="course"
-          content={{
-            id: existingCourse?.id || 'preview',
-            title,
-            description,
-            categoryId,
-            categoryPath: categoryId ? [categoryId] : [],
-            thumbnail,
-            instructor: instructor || user?.name || 'Current User',
-            duration: parseInt(duration) || 0,
-            status: 'draft',
-            sections: existingCourse?.sections || [],
-            tags,
-            language,
-            createdAt: existingCourse?.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }}
-        />
       </div>
     </DashboardLayout>
   );
