@@ -41,7 +41,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCourse, updateCourse } from '@/store/slices/courseSlice';
 import { useCreateCms, useUploadCmsContent } from '@/api/hooks/useCms';
 import { useCategories } from '@/api/hooks/useCategories';
-import { useGroups } from '@/api/hooks/useGroups';
+import { useGroupsQuery } from '@/api/hooks/useGroups';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -85,8 +85,11 @@ export default function CourseCreator() {
   // API hooks
   const createCms = useCreateCms();
   const uploadContent = useUploadCmsContent();
-  const { data: categories, isLoading: categoriesLoading } = useCategories();
-  const { groups, fetchGroups, isLoading: groupsLoading } = useGroups();
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
+  const { data: groupsData, isLoading: groupsLoading } = useGroupsQuery();
+  
+  const categories = categoriesData?.items || [];
+  const groups = groupsData?.items || [];
 
   const existingCourse = editId ? courses.find((c) => c.id === editId) : null;
 
@@ -109,10 +112,7 @@ export default function CourseCreator() {
   const [cmsId, setCmsId] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Fetch groups on mount
-  useEffect(() => {
-    fetchGroups();
-  }, [fetchGroups]);
+  // Groups are fetched automatically via React Query
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -410,7 +410,7 @@ export default function CourseCreator() {
                           </SelectTrigger>
                           <SelectContent className="bg-background border z-50">
                             {groups.map((group) => (
-                              <SelectItem key={group.id} value={group.id}>
+                              <SelectItem key={group.id} value={group.id.toString()}>
                                 {group.name}
                               </SelectItem>
                             ))}

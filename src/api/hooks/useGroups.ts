@@ -1,18 +1,99 @@
 import { useState, useCallback } from 'react';
-import { groupService } from '../services/groupService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { groupService, GroupQueryParams } from '../services/groupService';
 import { groupRoleService } from '../services/groupRoleService';
 import { userGroupService } from '../services/userGroupService';
-import { GroupResponse, GroupRequest } from '../types';
+import { GroupRequest, GroupResponseDto } from '../types';
 import { AxiosError } from 'axios';
 
+// Query keys
+export const groupKeys = {
+  all: ['groups'] as const,
+  list: (params?: GroupQueryParams) => [...groupKeys.all, 'list', params] as const,
+  detail: (id: number) => [...groupKeys.all, 'detail', id] as const,
+};
+
+/**
+ * Hook to fetch paginated groups (React Query)
+ */
+export const useGroupsQuery = (params?: GroupQueryParams) => {
+  return useQuery({
+    queryKey: groupKeys.list(params),
+    queryFn: () => groupService.getGroups(params),
+  });
+};
+
+/**
+ * Hook to fetch a single group by ID
+ */
+export const useGroup = (id: number, enabled = true) => {
+  return useQuery({
+    queryKey: groupKeys.detail(id),
+    queryFn: () => groupService.getGroup(id),
+    enabled: enabled && id > 0,
+  });
+};
+
+/**
+ * Hook to create a new group
+ */
+export const useCreateGroup = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: GroupRequest) => groupService.createGroup(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to update an existing group
+ */
+export const useUpdateGroup = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GroupRequest }) =>
+      groupService.updateGroup(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: groupKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to delete a group
+ */
+export const useDeleteGroup = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => groupService.deleteGroup(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all });
+    },
+  });
+};
+
+// Legacy compatibility interface
+interface LegacyGroupResponse {
+  id: string;
+  name: string;
+  description: string | null;
+  members?: Array<{ id: string; name: string; email: string; createdAt: string }>;
+}
+
 interface UseGroupsReturn {
-  groups: GroupResponse[];
+  groups: LegacyGroupResponse[];
   isLoading: boolean;
   error: string | null;
   fetchGroups: () => Promise<void>;
-  getGroup: (groupId: string) => Promise<GroupResponse | null>;
-  createGroup: (data: GroupRequest) => Promise<GroupResponse | null>;
-  updateGroup: (groupId: string, data: GroupRequest) => Promise<GroupResponse | null>;
+  getGroup: (groupId: string) => Promise<LegacyGroupResponse | null>;
+  createGroup: (data: GroupRequest) => Promise<LegacyGroupResponse | null>;
+  updateGroup: (groupId: string, data: GroupRequest) => Promise<LegacyGroupResponse | null>;
   deleteGroup: (groupId: string) => Promise<boolean>;
   // Role-Group mappings
   getRolesByGroup: (groupId: string) => Promise<string[]>;
@@ -26,8 +107,25 @@ interface UseGroupsReturn {
   clearError: () => void;
 }
 
+// Convert new DTO to legacy format
+const mapToLegacy = (dto: GroupResponseDto): LegacyGroupResponse => ({
+  id: String(dto.id),
+  name: dto.name,
+  description: null,
+  members: dto.users?.map(u => ({
+    id: String(u.id),
+    name: u.name,
+    email: u.email,
+    createdAt: new Date().toISOString(),
+  })) || [],
+});
+
+/**
+ * Legacy hook for backward compatibility with Roles.tsx
+ * @deprecated Use useGroupsQuery, useGroup, useCreateGroup, etc. instead
+ */
 export const useGroups = (): UseGroupsReturn => {
-  const [groups, setGroups] = useState<GroupResponse[]>([]);
+  const [groups, setGroups] = useState<LegacyGroupResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +134,7 @@ export const useGroups = (): UseGroupsReturn => {
     setError(null);
     try {
       const data = await groupService.getGroups();
-      setGroups(data);
+      setGroups(data.items.map(mapToLegacy));
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       setError(axiosError.response?.data?.message || 'Failed to fetch groups');
@@ -45,11 +143,12 @@ export const useGroups = (): UseGroupsReturn => {
     }
   }, []);
 
-  const getGroup = useCallback(async (groupId: string): Promise<GroupResponse | null> => {
+  const getGroup = useCallback(async (groupId: string): Promise<LegacyGroupResponse | null> => {
     setIsLoading(true);
     setError(null);
     try {
-      return await groupService.getGroup(groupId);
+      const result = await groupService.getGroup(parseInt(groupId));
+      return mapToLegacy(result);
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       setError(axiosError.response?.data?.message || 'Failed to fetch group');
@@ -59,13 +158,14 @@ export const useGroups = (): UseGroupsReturn => {
     }
   }, []);
 
-  const createGroup = useCallback(async (data: GroupRequest): Promise<GroupResponse | null> => {
+  const createGroup = useCallback(async (data: GroupRequest): Promise<LegacyGroupResponse | null> => {
     setIsLoading(true);
     setError(null);
     try {
       const newGroup = await groupService.createGroup(data);
-      setGroups((prev) => [...prev, newGroup]);
-      return newGroup;
+      const legacyGroup = mapToLegacy(newGroup);
+      setGroups((prev) => [...prev, legacyGroup]);
+      return legacyGroup;
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       setError(axiosError.response?.data?.message || 'Failed to create group');
@@ -76,15 +176,16 @@ export const useGroups = (): UseGroupsReturn => {
   }, []);
 
   const updateGroup = useCallback(
-    async (groupId: string, data: GroupRequest): Promise<GroupResponse | null> => {
+    async (groupId: string, data: GroupRequest): Promise<LegacyGroupResponse | null> => {
       setIsLoading(true);
       setError(null);
       try {
-        const updatedGroup = await groupService.updateGroup(groupId, data);
+        const updatedGroup = await groupService.updateGroup(parseInt(groupId), data);
+        const legacyGroup = mapToLegacy(updatedGroup);
         setGroups((prev) =>
-          prev.map((group) => (group.id === groupId ? updatedGroup : group))
+          prev.map((group) => (group.id === groupId ? legacyGroup : group))
         );
-        return updatedGroup;
+        return legacyGroup;
       } catch (err) {
         const axiosError = err as AxiosError<{ message?: string }>;
         setError(axiosError.response?.data?.message || 'Failed to update group');
@@ -100,7 +201,7 @@ export const useGroups = (): UseGroupsReturn => {
     setIsLoading(true);
     setError(null);
     try {
-      await groupService.deleteGroup(groupId);
+      await groupService.deleteGroup(parseInt(groupId));
       setGroups((prev) => prev.filter((group) => group.id !== groupId));
       return true;
     } catch (err) {

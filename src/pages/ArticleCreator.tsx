@@ -48,7 +48,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addArticle, updateArticle } from '@/store/slices/articleSlice';
 import { useCreateCms, useUploadCmsContent, useUploadCmsThumbnail } from '@/api/hooks/useCms';
 import { useCategories } from '@/api/hooks/useCategories';
-import { useGroups } from '@/api/hooks/useGroups';
+import { useGroupsQuery } from '@/api/hooks/useGroups';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -90,8 +90,11 @@ export default function ArticleCreator() {
   const createCms = useCreateCms();
   const uploadContent = useUploadCmsContent();
   const uploadThumbnail = useUploadCmsThumbnail();
-  const { data: categories, isLoading: categoriesLoading } = useCategories();
-  const { groups, fetchGroups, isLoading: groupsLoading } = useGroups();
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
+  const { data: groupsData, isLoading: groupsLoading } = useGroupsQuery();
+  
+  const categories = categoriesData?.items || [];
+  const groups = groupsData?.items || [];
   
   const existingArticle = editId ? articles.find(a => a.id === editId) : null;
 
@@ -128,10 +131,7 @@ export default function ArticleCreator() {
   const [showPreview, setShowPreview] = useState(false);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
 
-  // Fetch groups on mount
-  useEffect(() => {
-    fetchGroups();
-  }, [fetchGroups]);
+  // Groups are fetched automatically via React Query
 
   const generateSlug = () => {
     const generatedSlug = title
@@ -808,7 +808,7 @@ export default function ArticleCreator() {
                     <SelectContent className="bg-background border">
                       <SelectItem value="public">Public (no restriction)</SelectItem>
                       {groups.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
+                        <SelectItem key={group.id} value={group.id.toString()}>
                           {group.name}
                         </SelectItem>
                       ))}
