@@ -1,21 +1,21 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { cmsService } from '../services';
-import { CmsCreateDto, CmsSubmitRequest, CmsPublishRequest, CmsSendBackRequest } from '../types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { cmsService, CmsQueryParams } from '../services/cmsService';
+import { CmsCreateDto, CmsSubmitRequest, CmsSendBackRequest } from '../types';
 
 // Query keys
 export const cmsKeys = {
   all: ['cms'] as const,
+  list: (params?: CmsQueryParams) => [...cmsKeys.all, 'list', params] as const,
   detail: (id: number) => [...cmsKeys.all, id] as const,
 };
 
 /**
- * Hook to fetch a CMS item by ID
+ * Hook to fetch paginated CMS items
  */
-export const useCmsItem = (id: number, enabled = true) => {
+export const useCmsList = (params?: CmsQueryParams) => {
   return useQuery({
-    queryKey: cmsKeys.detail(id),
-    queryFn: () => cmsService.getById(id),
-    enabled: enabled && id > 0,
+    queryKey: cmsKeys.list(params),
+    queryFn: () => cmsService.getAll(params),
   });
 };
 
@@ -49,38 +49,12 @@ export const useUploadCmsContent = () => {
 };
 
 /**
- * Hook to upload thumbnail to a CMS item
- */
-export const useUploadCmsThumbnail = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ id, file }: { id: number; file: File }) => 
-      cmsService.uploadThumbnail(id, file),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
-    },
-  });
-};
-
-/**
  * Hook to download CMS content
  */
 export const useDownloadCmsContent = (id: number, enabled = false) => {
   return useQuery({
     queryKey: [...cmsKeys.detail(id), 'content'],
     queryFn: () => cmsService.downloadContent(id),
-    enabled: enabled && id > 0,
-  });
-};
-
-/**
- * Hook to download CMS thumbnail
- */
-export const useDownloadCmsThumbnail = (id: number, enabled = false) => {
-  return useQuery({
-    queryKey: [...cmsKeys.detail(id), 'thumbnail'],
-    queryFn: () => cmsService.downloadThumbnail(id),
     enabled: enabled && id > 0,
   });
 };
@@ -94,21 +68,6 @@ export const useSubmitCmsForReview = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: CmsSubmitRequest }) => 
       cmsService.submitForReview(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
-    },
-  });
-};
-
-/**
- * Hook to publish CMS content
- */
-export const usePublishCms = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CmsPublishRequest }) => 
-      cmsService.publish(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
     },

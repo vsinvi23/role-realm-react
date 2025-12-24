@@ -14,14 +14,6 @@ import { toast } from 'sonner';
 
 type TabStatus = 'all' | 'active' | 'deactivated' | 'invited';
 
-// Map UI status to API status
-const statusMap: Record<TabStatus, ApiUserStatus | undefined> = {
-  all: undefined,
-  active: 'ACTIVE',
-  deactivated: 'DEACTIVATED',
-  invited: 'PENDING',
-};
-
 export default function UserManagementPage() {
   const {
     users,
@@ -44,20 +36,10 @@ export default function UserManagementPage() {
   const [sortBy, setSortBy] = useState<string>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Fetch users on mount and when filters change
-  useEffect(() => {
-    fetchUsers({
-      page: currentPage,
-      size: pageSize,
-      status: statusMap[activeTab],
-      search: searchQuery || undefined,
-    });
-  }, [activeTab, pageSize, searchQuery]);
-
-  // Initial fetch
+  // Fetch users on mount
   useEffect(() => {
     fetchUsers({ page: 0, size: pageSize });
-  }, []);
+  }, [pageSize]);
 
   const counts = useMemo(() => {
     // For now, show total count - in a real app, you'd get counts from API
@@ -68,6 +50,31 @@ export default function UserManagementPage() {
       invited: users.filter(u => u.status === 'PENDING').length,
     };
   }, [users, totalElements]);
+
+  // Filter users client-side based on active tab and search
+  const filteredUsers = useMemo(() => {
+    let result = users;
+    
+    // Filter by status
+    if (activeTab === 'active') {
+      result = result.filter(u => u.status === 'ACTIVE');
+    } else if (activeTab === 'deactivated') {
+      result = result.filter(u => u.status === 'DEACTIVATED');
+    } else if (activeTab === 'invited') {
+      result = result.filter(u => u.status === 'PENDING');
+    }
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(u => 
+        u.name.toLowerCase().includes(query) || 
+        u.email.toLowerCase().includes(query)
+      );
+    }
+    
+    return result;
+  }, [users, activeTab, searchQuery]);
 
   const handleTabChange = (status: TabStatus) => {
     setActiveTab(status);
@@ -87,8 +94,6 @@ export default function UserManagementPage() {
     fetchUsers({
       page: page - 1, // API uses 0-indexed pages
       size: pageSize,
-      status: statusMap[activeTab],
-      search: searchQuery || undefined,
     });
   };
 
@@ -97,8 +102,6 @@ export default function UserManagementPage() {
     fetchUsers({
       page: 0,
       size,
-      status: statusMap[activeTab],
-      search: searchQuery || undefined,
     });
   };
 
@@ -144,8 +147,6 @@ export default function UserManagementPage() {
     fetchUsers({
       page: 0,
       size: pageSize,
-      status: statusMap[activeTab],
-      search: searchQuery || undefined,
     });
   };
 
@@ -197,7 +198,7 @@ export default function UserManagementPage() {
           ) : (
             <>
               <UserTable
-                users={users}
+                users={filteredUsers}
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}

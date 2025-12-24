@@ -1,5 +1,5 @@
 import apiClient from '../client';
-import { ApiResponse, CategoryResponseDto, CategoryPagedResponse } from '../types';
+import { ApiResponse, CategoryCreateDto, CategoryResponseDto, CategoryPagedResponse } from '../types';
 
 const CATEGORIES_BASE = '/api/categories';
 
@@ -10,8 +10,8 @@ export interface CategoryQueryParams {
 
 export const categoryService = {
   /**
-   * Get paginated list of categories
-   * GET /api/categories?page=0&size=10
+   * Get list of categories
+   * GET /api/categories
    */
   getCategories: async (params?: CategoryQueryParams): Promise<CategoryPagedResponse> => {
     const response = await apiClient.get<ApiResponse<CategoryPagedResponse>>(CATEGORIES_BASE, {
@@ -24,12 +24,20 @@ export const categoryService = {
   },
 
   /**
-   * Get a single category by ID
-   * GET /api/categories/:id
+   * Create a new category (admin only)
+   * POST /api/categories
    */
-  getCategory: async (categoryId: number): Promise<CategoryResponseDto> => {
-    const response = await apiClient.get<ApiResponse<CategoryResponseDto>>(`${CATEGORIES_BASE}/${categoryId}`);
+  createCategory: async (data: CategoryCreateDto): Promise<CategoryResponseDto> => {
+    const response = await apiClient.post<ApiResponse<CategoryResponseDto>>(CATEGORIES_BASE, data);
     return response.data.data!;
+  },
+
+  /**
+   * Delete a category (admin only)
+   * DELETE /api/categories/:id
+   */
+  deleteCategory: async (id: number): Promise<void> => {
+    await apiClient.delete(`${CATEGORIES_BASE}/${id}`);
   },
 };
 

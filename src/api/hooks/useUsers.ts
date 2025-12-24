@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { userService } from '../services/userService';
-import { UserResponse, UserRequest, PageResponse, UserQueryParams, UserDto } from '../types';
+import { UserResponse, UserRequest, UserDto } from '../types';
 import { AxiosError } from 'axios';
 
 // Helper to map UserDto to UserResponse for backwards compatibility
@@ -24,7 +24,7 @@ interface UseUsersReturn {
   currentPage: number;
   isLoading: boolean;
   error: string | null;
-  fetchUsers: (params?: UserQueryParams) => Promise<void>;
+  fetchUsers: (params?: { page?: number; size?: number }) => Promise<void>;
   getUser: (userId: string) => Promise<UserResponse | null>;
   createUser: (data: UserRequest) => Promise<UserResponse | null>;
   updateUser: (userId: string, data: UserRequest) => Promise<UserResponse | null>;
@@ -41,7 +41,7 @@ export const useUsers = (): UseUsersReturn => {
   const [error, setError] = useState<string | null>(null);
 
   // Note: User list endpoint not available in current API - returns empty
-  const fetchUsers = useCallback(async (params?: UserQueryParams) => {
+  const fetchUsers = useCallback(async (params?: { page?: number; size?: number }) => {
     setIsLoading(true);
     setError(null);
     try {

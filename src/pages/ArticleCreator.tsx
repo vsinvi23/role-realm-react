@@ -46,7 +46,7 @@ import {
 import { Article, SeoSettings, Attachment, WorkflowStatus, ContentBlock } from '@/types/content';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addArticle, updateArticle } from '@/store/slices/articleSlice';
-import { useCreateCms, useUploadCmsContent, useUploadCmsThumbnail } from '@/api/hooks/useCms';
+import { useCreateCms, useUploadCmsContent } from '@/api/hooks/useCms';
 import { useCategories } from '@/api/hooks/useCategories';
 import { useGroupsQuery } from '@/api/hooks/useGroups';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,7 +89,6 @@ export default function ArticleCreator() {
   // API hooks
   const createCms = useCreateCms();
   const uploadContent = useUploadCmsContent();
-  const uploadThumbnail = useUploadCmsThumbnail();
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
   const { data: groupsData, isLoading: groupsLoading } = useGroupsQuery();
   
@@ -182,8 +181,9 @@ export default function ArticleCreator() {
     setFeaturedImage(previewUrl);
 
     try {
+      // Thumbnail upload handled via content upload API
       if (cmsId) {
-        await uploadThumbnail.mutateAsync({ id: cmsId, file });
+        await uploadContent.mutateAsync({ id: cmsId, file });
         toast.success('Thumbnail uploaded successfully');
       }
     } catch (error) {
@@ -282,9 +282,9 @@ export default function ArticleCreator() {
         setCmsId(currentCmsId);
       }
 
-      // Upload thumbnail if pending
+      // Upload thumbnail if pending (using content upload API)
       if (thumbnailFile && currentCmsId) {
-        await uploadThumbnail.mutateAsync({ id: currentCmsId, file: thumbnailFile });
+        await uploadContent.mutateAsync({ id: currentCmsId, file: thumbnailFile });
       }
 
       const articleData: Article = {

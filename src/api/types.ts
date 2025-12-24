@@ -29,8 +29,8 @@ export interface RegisterRequest {
 export interface AuthResponse {
   userId: number;
   email: string;
-  message: string;
   token: string;
+  message?: string;
 }
 
 // ============================================
@@ -50,21 +50,7 @@ export interface UserDto {
   groups: string[];
 }
 
-export interface PagedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  size: number;
-}
-
-export interface UserQueryParams {
-  page?: number;
-  size?: number;
-  status?: UserStatus;
-  search?: string;
-}
-
-// Legacy types for backwards compatibility with existing UI
+// Legacy types for UI compatibility
 export interface UserRequest {
   name: string;
   email: string;
@@ -84,102 +70,12 @@ export interface UserResponse {
   groups?: string[];
 }
 
-export interface PageResponse<T> {
-  content: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  last: boolean;
-}
-
-// ============================================
-// CMS TYPES
-// ============================================
-
-export type CmsType = 'ARTICLE' | 'COURSE';
-
-export type CmsStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
-
-export interface CmsCreateDto {
-  type: CmsType;
-  categoryId: number;
-  contentLocation?: string;
-  createdBy: number;
-}
-
-export interface CmsResponseDto {
-  id: number;
-  type: CmsType;
-  categoryId: number;
-  status: CmsStatus;
-  contentLocation: string | null;
-  contentName: string;
-  contentType: string;
-  contentSize: number;
-  thumbnailLocation?: string;
-  thumbnailName?: string;
-  thumbnailType?: string;
-  thumbnailSize?: number;
-  createdBy: number;
-  createdAt: string;
-  updatedAt: string;
-  reviewerComment?: string;
-  reviewerId?: number;
-  reviewerName?: string;
-}
-
-export interface CmsSubmitRequest {
-  userId: number;
-}
-
-export interface CmsPublishRequest {
-  userId: number;
-}
-
-export interface CmsSendBackRequest {
-  reviewerId: number;
-  comment: string;
-}
-
-export interface StoredFileInfo {
-  path: string;
-  originalName: string;
-  contentType: string;
-  size: number;
-}
-
-// ============================================
-// CATEGORY TYPES
-// ============================================
-
-export interface CategoryChildDto {
-  id: number;
-  name: string;
-  parentId: number | null;
-}
-
-export interface CategoryResponseDto {
-  id: number;
-  name: string;
-  parentId: number | null;
-  children: CategoryChildDto[] | null;
-}
-
-export interface CategoryPagedResponse {
-  items: CategoryResponseDto[];
-  total: number;
-  currentPage: number;
-  pageSize: number;
-}
-
 // ============================================
 // GROUP TYPES
 // ============================================
 
-export interface GroupRequest {
+export interface GroupCreateDto {
   name: string;
-  description?: string;
 }
 
 export interface GroupUserDto {
@@ -207,6 +103,83 @@ export interface GroupResponse {
   name: string;
   description: string | null;
   members?: UserResponse[];
+}
+
+// ============================================
+// CATEGORY TYPES
+// ============================================
+
+export interface CategoryCreateDto {
+  name: string;
+}
+
+export interface CategoryResponseDto {
+  id: number;
+  name: string;
+  parentId: number | null;
+}
+
+export interface CategoryPagedResponse {
+  items: CategoryResponseDto[];
+  total: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+// ============================================
+// CMS TYPES
+// ============================================
+
+export type CmsType = 'ARTICLE' | 'COURSE';
+
+export type CmsStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
+
+export interface CmsCreateDto {
+  type: CmsType;
+  categoryId: number;
+  createdBy?: number;
+  contentLocation?: string;
+}
+
+export interface CmsResponseDto {
+  id: number;
+  type: CmsType;
+  categoryId: number;
+  status: CmsStatus;
+  contentLocation: string | null;
+  contentName: string | null;
+  contentType: string | null;
+  contentSize: number | null;
+  createdBy: number;
+  createdAt: string;
+  updatedAt: string;
+  reviewerId?: number;
+  reviewerName?: string;
+  reviewerComment?: string;
+}
+
+export interface CmsPagedResponse {
+  items: CmsResponseDto[];
+  total: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+export interface CmsSubmitRequest {
+  userId: number;
+}
+
+export interface CmsSendBackRequest {
+  reviewerId: number;
+  comment: string;
+}
+
+export interface StoredFileInfo {
+  id: number;
+  contentLocation: string;
+  contentName: string;
+  contentType: string;
+  contentSize: number;
 }
 
 // ============================================

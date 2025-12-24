@@ -1,5 +1,5 @@
 import apiClient from '../client';
-import { ApiResponse, GroupResponseDto, GroupPagedResponse } from '../types';
+import { ApiResponse, GroupCreateDto, GroupResponseDto, GroupPagedResponse } from '../types';
 
 const GROUPS_BASE = '/api/groups';
 
@@ -27,9 +27,26 @@ export const groupService = {
    * Get a single group by ID
    * GET /api/groups/:id
    */
-  getGroup: async (groupId: number): Promise<GroupResponseDto> => {
-    const response = await apiClient.get<ApiResponse<GroupResponseDto>>(`${GROUPS_BASE}/${groupId}`);
+  getGroup: async (id: number): Promise<GroupResponseDto> => {
+    const response = await apiClient.get<ApiResponse<GroupResponseDto>>(`${GROUPS_BASE}/${id}`);
     return response.data.data!;
+  },
+
+  /**
+   * Create a new group (admin only)
+   * POST /api/groups
+   */
+  createGroup: async (data: GroupCreateDto): Promise<GroupResponseDto> => {
+    const response = await apiClient.post<ApiResponse<GroupResponseDto>>(GROUPS_BASE, data);
+    return response.data.data!;
+  },
+
+  /**
+   * Delete a group (admin only)
+   * DELETE /api/groups/:id
+   */
+  deleteGroup: async (id: number): Promise<void> => {
+    await apiClient.delete(`${GROUPS_BASE}/${id}`);
   },
 };
 
