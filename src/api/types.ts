@@ -1,4 +1,4 @@
-// API Types based on OpenAPI specification (GeekGully API v1.0.0)
+// API Types based on CMS API Documentation
 
 // ============================================
 // GENERIC API RESPONSE WRAPPER
@@ -11,18 +11,14 @@ export interface ApiResponse<T = unknown> {
 }
 
 // ============================================
-// PAGED RESPONSE (matches backend PagedResponse)
+// PAGED RESPONSE
 // ============================================
 
 export interface PagedResponse<T> {
   items: T[];
-  total: number;
+  totalElements: number;
   currentPage: number;
   pageSize: number;
-  // Legacy aliases for compatibility
-  totalElements?: number;
-  page?: number;
-  size?: number;
 }
 
 // ============================================
@@ -65,8 +61,6 @@ export interface UserDto {
   groups: string[];
 }
 
-export type UserPagedResponse = PagedResponse<UserDto>;
-
 // Legacy UserResponse for UI compatibility
 export interface UserResponse {
   id: string;
@@ -78,6 +72,8 @@ export interface UserResponse {
   mobileNo?: string;
   groups?: string[];
 }
+
+export type UserPagedResponse = PagedResponse<UserDto>;
 
 // ============================================
 // GROUP TYPES
@@ -117,16 +113,16 @@ export interface CategoryResponseDto {
   children?: CategoryResponseDto[];
 }
 
-// Categories response is a flat array, not paged
 export type CategoryListResponse = CategoryResponseDto[];
 
 // ============================================
-// CMS TYPES
+// CMS TYPES (per API documentation)
 // ============================================
 
 export type CmsType = 'ARTICLE' | 'VIDEO' | 'COURSE';
 
-export type CmsStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
+// Status values: DRAFT | REVIEW | PUBLISHED
+export type CmsStatus = 'DRAFT' | 'REVIEW' | 'PUBLISHED';
 
 export interface CmsCreateDto {
   type: CmsType;
@@ -137,6 +133,8 @@ export interface CmsCreateDto {
 }
 
 export interface CmsUpdateDto {
+  type?: CmsType;
+  categoryId?: number;
   title?: string;
   description?: string;
 }
@@ -145,6 +143,10 @@ export interface CmsResponseDto {
   id: number;
   type: CmsType;
   categoryId: number;
+  createdBy: number;
+  reviewerId: number | null;
+  reviewerName: string | null;
+  reviewerComment: string | null;
   status: CmsStatus;
   title: string | null;
   description: string | null;
@@ -156,34 +158,23 @@ export interface CmsResponseDto {
   thumbnailName: string | null;
   thumbnailType: string | null;
   thumbnailSize: number | null;
-  createdBy: number;
   createdAt: string;
-  updatedAt: string;
-  reviewerId?: number;
-  reviewerName?: string;
-  reviewerComment?: string;
+  updatedAt: string | null;
 }
 
 export type CmsPagedResponse = PagedResponse<CmsResponseDto>;
 
 export interface CmsSubmitRequest {
-  userId: number;
+  userId?: number;
 }
 
 export interface CmsPublishRequest {
-  userId: number;
+  userId?: number;
 }
 
 export interface CmsSendBackRequest {
   reviewerId: number;
   comment: string;
-}
-
-export interface StoredFileInfo {
-  location: string;
-  name: string;
-  size: number;
-  type: string;
 }
 
 // ============================================

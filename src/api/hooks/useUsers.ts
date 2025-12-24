@@ -45,7 +45,7 @@ export const useUsers = (): UseUsersReturn => {
       setUsers(data.items.map(mapUserDtoToResponse));
       setTotalElements(data.totalElements);
       setTotalPages(Math.ceil(data.totalElements / (params?.size || 10)));
-      setCurrentPage(data.page);
+      setCurrentPage(data.currentPage);
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       setError(axiosError.response?.data?.message || 'Failed to fetch users');
