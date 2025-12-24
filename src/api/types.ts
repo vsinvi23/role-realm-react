@@ -198,6 +198,26 @@ export interface GroupRequest {
   description?: string;
 }
 
+export interface GroupUserDto {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface GroupResponseDto {
+  id: number;
+  name: string;
+  users: GroupUserDto[] | null;
+}
+
+export interface GroupPagedResponse {
+  items: GroupResponseDto[];
+  total: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+// Legacy type for backwards compatibility
 export interface GroupResponse {
   id: string;
   name: string;
@@ -209,6 +229,27 @@ export interface GroupResponse {
 // CATEGORY TYPES
 // ============================================
 
+export interface CategoryChildDto {
+  id: number;
+  name: string;
+  parentId: number | null;
+}
+
+export interface CategoryResponseDto {
+  id: number;
+  name: string;
+  parentId: number | null;
+  children: CategoryChildDto[] | null;
+}
+
+export interface CategoryPagedResponse {
+  items: CategoryResponseDto[];
+  total: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+// Legacy type for backwards compatibility
 export interface CategoryDto {
   id: number;
   name: string;
