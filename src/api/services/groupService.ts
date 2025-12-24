@@ -1,5 +1,5 @@
 import apiClient from '../client';
-import { ApiResponse, GroupResponseDto, GroupPagedResponse, GroupRequest } from '../types';
+import { ApiResponse, GroupResponseDto, GroupPagedResponse } from '../types';
 
 const GROUPS_BASE = '/api/groups';
 
@@ -30,32 +30,6 @@ export const groupService = {
   getGroup: async (groupId: number): Promise<GroupResponseDto> => {
     const response = await apiClient.get<ApiResponse<GroupResponseDto>>(`${GROUPS_BASE}/${groupId}`);
     return response.data.data!;
-  },
-
-  /**
-   * Create a new group
-   * POST /api/groups
-   */
-  createGroup: async (data: GroupRequest): Promise<GroupResponseDto> => {
-    const response = await apiClient.post<ApiResponse<GroupResponseDto>>(GROUPS_BASE, data);
-    return response.data.data!;
-  },
-
-  /**
-   * Update an existing group
-   * PUT /api/groups/:id
-   */
-  updateGroup: async (groupId: number, data: GroupRequest): Promise<GroupResponseDto> => {
-    const response = await apiClient.put<ApiResponse<GroupResponseDto>>(`${GROUPS_BASE}/${groupId}`, data);
-    return response.data.data!;
-  },
-
-  /**
-   * Delete a group
-   * DELETE /api/groups/:id
-   */
-  deleteGroup: async (groupId: number): Promise<void> => {
-    await apiClient.delete(`${GROUPS_BASE}/${groupId}`);
   },
 };
 
