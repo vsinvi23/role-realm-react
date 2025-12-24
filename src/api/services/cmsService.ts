@@ -63,6 +63,38 @@ export const cmsService = {
   },
 
   /**
+   * Upload thumbnail image for a CMS item
+   * POST /api/cms/:id/thumbnail
+   */
+  uploadThumbnail: async (id: number, file: File): Promise<StoredFileInfo> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<ApiResponse<StoredFileInfo>>(
+      `${CMS_BASE}/${id}/thumbnail`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data.data!;
+  },
+
+  /**
+   * Download thumbnail for a CMS item
+   * GET /api/cms/:id/thumbnail
+   * @returns Blob of the thumbnail image
+   */
+  downloadThumbnail: async (id: number): Promise<Blob> => {
+    const response = await apiClient.get<Blob>(`${CMS_BASE}/${id}/thumbnail`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  /**
    * Submit CMS for review
    * POST /api/cms/:id/submit
    */
