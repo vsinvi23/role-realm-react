@@ -11,6 +11,17 @@ export interface ApiResponse<T = unknown> {
 }
 
 // ============================================
+// PAGED RESPONSE (matches backend PagedResponse)
+// ============================================
+
+export interface PagedResponse<T> {
+  items: T[];
+  totalElements: number;
+  page: number;
+  size: number;
+}
+
+// ============================================
 // AUTH TYPES
 // ============================================
 
@@ -50,15 +61,9 @@ export interface UserDto {
   groups: string[];
 }
 
-// Legacy types for UI compatibility
-export interface UserRequest {
-  name: string;
-  email: string;
-  password?: string;
-  status: UserStatus;
-  mobileNo?: string;
-}
+export type UserPagedResponse = PagedResponse<UserDto>;
 
+// Legacy UserResponse for UI compatibility
 export interface UserResponse {
   id: string;
   name: string;
@@ -90,20 +95,7 @@ export interface GroupResponseDto {
   users: GroupUserDto[] | null;
 }
 
-export interface GroupPagedResponse {
-  items: GroupResponseDto[];
-  total: number;
-  currentPage: number;
-  pageSize: number;
-}
-
-// Legacy type for backwards compatibility
-export interface GroupResponse {
-  id: string;
-  name: string;
-  description: string | null;
-  members?: UserResponse[];
-}
+export type GroupPagedResponse = PagedResponse<GroupResponseDto>;
 
 // ============================================
 // CATEGORY TYPES
@@ -111,26 +103,24 @@ export interface GroupResponse {
 
 export interface CategoryCreateDto {
   name: string;
+  parentId?: number | null;
 }
 
 export interface CategoryResponseDto {
   id: number;
   name: string;
   parentId: number | null;
+  children?: CategoryResponseDto[];
 }
 
-export interface CategoryPagedResponse {
-  items: CategoryResponseDto[];
-  total: number;
-  currentPage: number;
-  pageSize: number;
-}
+// Categories response is a flat array, not paged
+export type CategoryListResponse = CategoryResponseDto[];
 
 // ============================================
 // CMS TYPES
 // ============================================
 
-export type CmsType = 'ARTICLE' | 'COURSE';
+export type CmsType = 'ARTICLE' | 'VIDEO' | 'COURSE';
 
 export type CmsStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
 
@@ -138,7 +128,13 @@ export interface CmsCreateDto {
   type: CmsType;
   categoryId: number;
   createdBy?: number;
-  contentLocation?: string;
+  title?: string;
+  description?: string;
+}
+
+export interface CmsUpdateDto {
+  title?: string;
+  description?: string;
 }
 
 export interface CmsResponseDto {
@@ -146,10 +142,16 @@ export interface CmsResponseDto {
   type: CmsType;
   categoryId: number;
   status: CmsStatus;
+  title: string | null;
+  description: string | null;
   contentLocation: string | null;
   contentName: string | null;
   contentType: string | null;
   contentSize: number | null;
+  thumbnailLocation: string | null;
+  thumbnailName: string | null;
+  thumbnailType: string | null;
+  thumbnailSize: number | null;
   createdBy: number;
   createdAt: string;
   updatedAt: string;
@@ -158,14 +160,13 @@ export interface CmsResponseDto {
   reviewerComment?: string;
 }
 
-export interface CmsPagedResponse {
-  items: CmsResponseDto[];
-  total: number;
-  currentPage: number;
-  pageSize: number;
-}
+export type CmsPagedResponse = PagedResponse<CmsResponseDto>;
 
 export interface CmsSubmitRequest {
+  userId: number;
+}
+
+export interface CmsPublishRequest {
   userId: number;
 }
 
@@ -175,51 +176,10 @@ export interface CmsSendBackRequest {
 }
 
 export interface StoredFileInfo {
-  id: number;
-  contentLocation: string;
-  contentName: string;
-  contentType: string;
-  contentSize: number;
-}
-
-// ============================================
-// ROLE TYPES (Legacy - for UI compatibility)
-// ============================================
-
-export interface RoleRequest {
+  location: string;
   name: string;
-  system?: boolean;
-}
-
-export interface RoleResponse {
-  id: string;
-  name: string;
-  system: boolean;
-}
-
-// ============================================
-// PERMISSION TYPES (Legacy - for UI compatibility)
-// ============================================
-
-export interface PermissionRequest {
-  module: string;
-  view?: boolean;
-  create?: boolean;
-  edit?: boolean;
-  delete?: boolean;
-  publish?: boolean;
-  manage?: boolean;
-}
-
-export interface PermissionResponse {
-  id: string;
-  module: string;
-  view: boolean;
-  create: boolean;
-  edit: boolean;
-  delete: boolean;
-  publish: boolean;
-  manage: boolean;
+  size: number;
+  type: string;
 }
 
 // ============================================

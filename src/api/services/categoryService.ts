@@ -1,26 +1,16 @@
 import apiClient from '../client';
-import { ApiResponse, CategoryCreateDto, CategoryResponseDto, CategoryPagedResponse } from '../types';
+import { ApiResponse, CategoryCreateDto, CategoryResponseDto, CategoryListResponse } from '../types';
 
 const CATEGORIES_BASE = '/api/categories';
 
-export interface CategoryQueryParams {
-  page?: number;
-  size?: number;
-}
-
 export const categoryService = {
   /**
-   * Get list of categories
+   * Get list of categories (returns flat array with nested children)
    * GET /api/categories
    */
-  getCategories: async (params?: CategoryQueryParams): Promise<CategoryPagedResponse> => {
-    const response = await apiClient.get<ApiResponse<CategoryPagedResponse>>(CATEGORIES_BASE, {
-      params: {
-        page: params?.page ?? 0,
-        size: params?.size ?? 10,
-      },
-    });
-    return response.data.data || { items: [], total: 0, currentPage: 0, pageSize: 10 };
+  getCategories: async (): Promise<CategoryListResponse> => {
+    const response = await apiClient.get<ApiResponse<CategoryListResponse>>(CATEGORIES_BASE);
+    return response.data.data || [];
   },
 
   /**
