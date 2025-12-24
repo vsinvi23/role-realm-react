@@ -76,21 +76,28 @@ const courseSlice = createSlice({
     },
     addCourse: (state, action: PayloadAction<Partial<Course>>) => {
       const newCourse: Course = {
-        id: `course-${Date.now()}`,
+        id: action.payload.id || `course-${Date.now()}`,
         title: action.payload.title || 'Untitled Course',
         description: action.payload.description || '',
         categoryId: action.payload.categoryId || '',
         categoryPath: action.payload.categoryPath || [],
+        thumbnail: action.payload.thumbnail,
         instructor: action.payload.instructor || '',
-        duration: 0,
-        status: 'draft',
-        sections: [],
-        tags: [],
-        language: 'English',
-        createdAt: new Date().toISOString(),
+        duration: action.payload.duration || 0,
+        status: action.payload.status || 'draft',
+        sections: action.payload.sections || [],
+        tags: action.payload.tags || [],
+        language: action.payload.language || 'English',
+        createdAt: action.payload.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       state.courses.push(newCourse);
+    },
+    updateCourse: (state, action: PayloadAction<Course>) => {
+      const index = state.courses.findIndex(c => c.id === action.payload.id);
+      if (index !== -1) {
+        state.courses[index] = { ...action.payload, updatedAt: new Date().toISOString() };
+      }
     },
     deleteCourse: (state, action: PayloadAction<string>) => {
       state.courses = state.courses.filter(c => c.id !== action.payload);
@@ -110,5 +117,5 @@ const courseSlice = createSlice({
   },
 });
 
-export const { selectCourse, selectLesson, setFilters, updateCourseSections, updateLesson, updateCourseStatus, addCourse, deleteCourse } = courseSlice.actions;
+export const { selectCourse, selectLesson, setFilters, updateCourseSections, updateLesson, updateCourseStatus, addCourse, updateCourse, deleteCourse } = courseSlice.actions;
 export default courseSlice.reducer;

@@ -14,10 +14,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Plus, Grid, List, GitBranch, MessageSquare, BookOpen, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export default function CourseManagement() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { courses, selectedCourseId, selectedLessonId, filters, saving } = useAppSelector(state => state.courses);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState<'content' | 'workflow'>('content');
@@ -195,7 +197,7 @@ export default function CourseManagement() {
             <h1 className="text-2xl font-bold">Course Management</h1>
             <p className="text-muted-foreground">Create and manage courses with hierarchical content.</p>
           </div>
-          <Button><Plus className="w-4 h-4 mr-2" />Create Course</Button>
+          <Button onClick={() => navigate('/courses/create')}><Plus className="w-4 h-4 mr-2" />Create Course</Button>
         </div>
 
         <div className="flex items-center gap-4">
