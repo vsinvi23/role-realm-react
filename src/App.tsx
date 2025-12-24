@@ -10,6 +10,8 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 import UserManagementPage from './pages/UserManagement';
 import UserManagementDashboard from './pages/UserManagementDashboard';
 import RolesPage from './pages/Roles';
+import GroupsPage from './pages/GroupsPage';
+import CategoriesPage from './pages/CategoriesPage';
 import DashboardPage from './pages/Dashboard';
 import ContentManagement from './pages/ContentManagement';
 import CourseManagement from './pages/CourseManagement';
@@ -58,6 +60,8 @@ const App = () => (
               <Route path="/user-management" element={<ProtectedRoute><UserManagementDashboard /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />
               <Route path="/roles" element={<ProtectedRoute><RolesPage /></ProtectedRoute>} />
+              <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
+              <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
               <Route path="/content" element={<ProtectedRoute><ContentManagement /></ProtectedRoute>} />
               <Route path="/courses" element={<ProtectedRoute><CourseManagement /></ProtectedRoute>} />
               <Route path="/courses/create" element={<ProtectedRoute><CourseCreator /></ProtectedRoute>} />

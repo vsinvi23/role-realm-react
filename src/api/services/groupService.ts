@@ -42,6 +42,15 @@ export const groupService = {
   },
 
   /**
+   * Update a group (admin only)
+   * PUT /api/groups/:id
+   */
+  updateGroup: async (id: number, data: GroupCreateDto): Promise<GroupResponseDto> => {
+    const response = await apiClient.put<ApiResponse<GroupResponseDto>>(`${GROUPS_BASE}/${id}`, data);
+    return response.data.data!;
+  },
+
+  /**
    * Delete a group (admin only)
    * DELETE /api/groups/:id
    */
