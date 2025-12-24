@@ -38,13 +38,15 @@ interface NavSection {
   items: NavItem[];
 }
 
-import { FolderTree, BookOpen, FileText, ListTodo } from 'lucide-react';
+import { FolderTree, BookOpen, FileText, ListTodo, Layers } from 'lucide-react';
 
 const standaloneItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: ListTodo, label: 'My Tasks', href: '/my-tasks' },
   { icon: BookOpen, label: 'Courses', href: '/courses' },
   { icon: FileText, label: 'Articles', href: '/articles' },
+  { icon: Layers, label: 'Groups', href: '/groups' },
+  { icon: FolderTree, label: 'Categories', href: '/categories' },
 ];
 
 const userManagementSection: NavSection = {
@@ -53,7 +55,6 @@ const userManagementSection: NavSection = {
   href: '/user-management',
   items: [
     { icon: Users, label: 'Manage Users', href: '/users' },
-    { icon: Shield, label: 'Roles & Permissions', href: '/roles' },
   ],
 };
 
@@ -63,7 +64,6 @@ const settingsSection: NavSection = {
   href: '/settings',
   items: [
     { icon: Globe, label: 'System Settings', href: '/settings' },
-    { icon: FolderTree, label: 'Category Management', href: '/content' },
   ],
 };
 

@@ -3,6 +3,18 @@ import { ApiResponse, CategoryCreateDto, CategoryResponseDto, CategoryListRespon
 
 const CATEGORIES_BASE = '/api/categories';
 
+export interface CategoryQueryParams {
+  page?: number;
+  size?: number;
+}
+
+export interface CategoryPagedResponse {
+  items: CategoryResponseDto[];
+  totalElements: number;
+  page: number;
+  size: number;
+}
+
 // Helper to extract array from various response formats
 const extractCategoriesArray = (data: unknown): CategoryResponseDto[] => {
   if (!data) return [];
@@ -30,11 +42,43 @@ export const categoryService = {
   },
 
   /**
+   * Get paginated list of categories
+   * GET /api/categories?page=0&size=10
+   */
+  getCategoriesPaged: async (params?: CategoryQueryParams): Promise<CategoryPagedResponse> => {
+    const response = await apiClient.get<ApiResponse<CategoryPagedResponse>>(CATEGORIES_BASE, {
+      params: {
+        page: params?.page ?? 0,
+        size: params?.size ?? 10,
+      },
+    });
+    return response.data.data || { items: [], totalElements: 0, page: 0, size: 10 };
+  },
+
+  /**
+   * Get a single category by ID
+   * GET /api/categories/:id
+   */
+  getCategory: async (id: number): Promise<CategoryResponseDto> => {
+    const response = await apiClient.get<ApiResponse<CategoryResponseDto>>(`${CATEGORIES_BASE}/${id}`);
+    return response.data.data!;
+  },
+
+  /**
    * Create a new category (admin only)
    * POST /api/categories
    */
   createCategory: async (data: CategoryCreateDto): Promise<CategoryResponseDto> => {
     const response = await apiClient.post<ApiResponse<CategoryResponseDto>>(CATEGORIES_BASE, data);
+    return response.data.data!;
+  },
+
+  /**
+   * Update a category (admin only)
+   * PUT /api/categories/:id
+   */
+  updateCategory: async (id: number, data: CategoryCreateDto): Promise<CategoryResponseDto> => {
+    const response = await apiClient.put<ApiResponse<CategoryResponseDto>>(`${CATEGORIES_BASE}/${id}`, data);
     return response.data.data!;
   },
 

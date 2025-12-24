@@ -47,6 +47,21 @@ export const useCreateGroup = () => {
 };
 
 /**
+ * Hook to update a group (admin only)
+ */
+export const useUpdateGroup = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GroupCreateDto }) => 
+      groupService.updateGroup(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all });
+    },
+  });
+};
+
+/**
  * Hook to delete a group (admin only)
  */
 export const useDeleteGroup = () => {
