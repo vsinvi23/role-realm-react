@@ -1,4 +1,4 @@
-import { Bell, Search, ChevronDown, LogOut } from 'lucide-react';
+import { Bell, Search, ChevronDown, LogOut, User, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -72,9 +72,21 @@ export function Header() {
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-56 bg-popover border z-50">
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onSelect={() => navigate('/profile')}
+            >
+              <User className="w-4 h-4 mr-2" />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onSelect={() => navigate('/settings')}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="text-destructive cursor-pointer"

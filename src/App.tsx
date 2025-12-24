@@ -13,6 +13,7 @@ import RolesPage from './pages/Roles';
 import DashboardPage from './pages/Dashboard';
 import ContentManagement from './pages/ContentManagement';
 import CourseManagement from './pages/CourseManagement';
+import CourseCreator from './pages/CourseCreator';
 import ArticleManagement from './pages/ArticleManagement';
 import ArticleCreator from './pages/ArticleCreator';
 import MyTasks from './pages/MyTasks';
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="/roles" element={<ProtectedRoute><RolesPage /></ProtectedRoute>} />
               <Route path="/content" element={<ProtectedRoute><ContentManagement /></ProtectedRoute>} />
               <Route path="/courses" element={<ProtectedRoute><CourseManagement /></ProtectedRoute>} />
+              <Route path="/courses/create" element={<ProtectedRoute><CourseCreator /></ProtectedRoute>} />
               <Route path="/articles" element={<ProtectedRoute><ArticleManagement /></ProtectedRoute>} />
               <Route path="/articles/create" element={<ProtectedRoute><ArticleCreator /></ProtectedRoute>} />
               <Route path="/my-tasks" element={<ProtectedRoute><MyTasks /></ProtectedRoute>} />

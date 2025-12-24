@@ -16,9 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Plus, Pencil, Eye, MessageSquare, GitBranch, FileText, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export default function ArticleManagement() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { articles, selectedArticleId, filters, saving } = useAppSelector(state => state.articles);
   const [reviewComments, setReviewComments] = useState<Record<string, ReviewComment[]>>({});
   const [activeTab, setActiveTab] = useState<'content' | 'workflow'>('content');
@@ -167,7 +169,7 @@ export default function ArticleManagement() {
             <h1 className="text-2xl font-bold">Article Management</h1>
             <p className="text-muted-foreground">Create, edit, and publish articles with SEO optimization.</p>
           </div>
-          <Button><Plus className="w-4 h-4 mr-2" />Create Article</Button>
+          <Button onClick={() => navigate('/articles/create')}><Plus className="w-4 h-4 mr-2" />Create Article</Button>
         </div>
 
         <div className="relative max-w-md">
