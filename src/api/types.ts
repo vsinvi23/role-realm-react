@@ -16,7 +16,8 @@ export interface ApiResponse<T = unknown> {
 
 export interface PagedResponse<T> {
   items: T[];
-  totalElements: number;
+  total?: number;
+  totalElements?: number;
   currentPage: number;
   pageSize: number;
 }
