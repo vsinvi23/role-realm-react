@@ -31,6 +31,8 @@ import SearchResults from './pages/SearchResults';
 import LearningPathPage from './pages/LearningPathPage';
 import ArticleViewPage from './pages/ArticleViewPage';
 import CourseViewPage from './pages/CourseViewPage';
+import PublicArticleView from './pages/PublicArticleView';
+import PublicCourseView from './pages/PublicCourseView';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -50,8 +52,8 @@ const App = () => (
               <Route path="/search" element={<SearchResults />} />
               <Route path="/technology/:slug" element={<TechnologyPage />} />
               <Route path="/explore/:category" element={<CourseCategoryPage />} />
-              <Route path="/article/:slug" element={<ArticleViewPage />} />
-              <Route path="/course/:slug" element={<CourseViewPage />} />
+              <Route path="/article/:id" element={<PublicArticleView />} />
+              <Route path="/course/:id" element={<PublicCourseView />} />
               <Route path="/learn/:path" element={<LearningPathPage />} />
               
               {/* Protected Admin Routes */}

@@ -180,6 +180,9 @@ export interface CmsResponseDto {
   attachments: AttachmentDto[] | null;
   createdAt: string;
   updatedAt: string | null;
+  publishedAt: string | null;
+  version?: number;
+  updatedBy?: number;
 }
 
 export interface MediaUploadResponse {
