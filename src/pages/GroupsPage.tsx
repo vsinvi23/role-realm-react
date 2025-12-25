@@ -70,9 +70,9 @@ const PERMISSION_TYPES = [
 
 export default function GroupsPage() {
   const [page, setPage] = useState(0);
-  const size = 10;
+  const [pageSize, setPageSize] = useState(10);
   
-  const { data, isLoading, refetch } = useGroupsQuery({ page, size });
+  const { data, isLoading, refetch } = useGroupsQuery({ page, size: pageSize });
   const { data: categoriesData } = useCategoriesPaged({ page: 0, size: 100 });
   const { data: usersData } = useUsersQuery({ page: 0, size: 100 });
   const createMutation = useCreateGroup();
@@ -110,9 +110,12 @@ export default function GroupsPage() {
   );
 
   const groups = data?.items || [];
-  const totalElements = data?.totalElements || 0;
-  const totalPages = Math.ceil(totalElements / size);
+  const totalElements = data?.total || data?.totalElements || 0;
+  const totalPages = Math.ceil(totalElements / pageSize);
   const categories = categoriesData?.items || [];
+
+  // Store member counts for each group (fetched separately)
+  const [memberCounts, setMemberCounts] = useState<Record<number, number>>({});
 
   // Generate group name from selections
   const generatedName = useMemo(() => {
@@ -234,18 +237,35 @@ export default function GroupsPage() {
     );
   }, [groupMembers, userSearchQuery]);
 
-  // Filter available users for adding (exclude current members)
+  // Filter available users for adding (exclude current members) - show all non-members
   const availableUsers = useMemo(() => {
     const allUsers = usersData?.items || [];
     const memberIds = new Set((groupMembers || []).map(m => m.id));
     const filtered = allUsers.filter(u => !memberIds.has(u.id));
     
-    if (!addUserSearchQuery.trim()) return filtered.slice(0, 10); // Limit to 10 for performance
+    if (!addUserSearchQuery.trim()) return filtered;
     const query = addUserSearchQuery.toLowerCase();
     return filtered.filter(
       u => u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query)
-    ).slice(0, 10);
+    );
   }, [usersData, groupMembers, addUserSearchQuery]);
+
+  // Update member count when sheet opens/closes or members change
+  const updateMemberCount = (groupId: number, count: number) => {
+    setMemberCounts(prev => ({ ...prev, [groupId]: count }));
+  };
+
+  // Update count when members are fetched
+  useMemo(() => {
+    if (selectedGroupId && groupMembers) {
+      updateMemberCount(selectedGroupId, groupMembers.length);
+    }
+  }, [selectedGroupId, groupMembers]);
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setPage(0); // Reset to first page when changing page size
+  };
 
   return (
     <DashboardLayout>
@@ -318,7 +338,7 @@ export default function GroupsPage() {
                             onClick={() => handleViewUsers(group)}
                           >
                             <Users className="w-3 h-3" />
-                            {group.users?.length || 0} users
+                            {memberCounts[group.id] ?? group.users?.length ?? '–'} users
                           </Button>
                         </TableCell>
                         <TableCell className="text-right space-x-1">
@@ -337,12 +357,32 @@ export default function GroupsPage() {
                   </TableBody>
                 </Table>
 
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4">
+                {/* Pagination */}
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Show</span>
+                    <Select
+                      value={pageSize.toString()}
+                      onValueChange={(value) => handlePageSizeChange(Number(value))}
+                    >
+                      <SelectTrigger className="w-20 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border shadow-lg z-50">
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">per page</span>
+                  </div>
+
+                  <div className="flex items-center gap-4">
                     <p className="text-sm text-muted-foreground">
-                      Page {page + 1} of {totalPages}
+                      Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, totalElements)} of {totalElements}
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button
                         variant="outline"
                         size="sm"
@@ -351,6 +391,30 @@ export default function GroupsPage() {
                       >
                         Previous
                       </Button>
+                      {/* Page numbers */}
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum: number;
+                        if (totalPages <= 5) {
+                          pageNum = i;
+                        } else if (page < 3) {
+                          pageNum = i;
+                        } else if (page > totalPages - 4) {
+                          pageNum = totalPages - 5 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={page === pageNum ? "default" : "outline"}
+                            size="sm"
+                            className="w-8 h-8 p-0"
+                            onClick={() => setPage(pageNum)}
+                          >
+                            {pageNum + 1}
+                          </Button>
+                        );
+                      })}
                       <Button
                         variant="outline"
                         size="sm"
@@ -361,7 +425,7 @@ export default function GroupsPage() {
                       </Button>
                     </div>
                   </div>
-                )}
+                </div>
               </>
             )}
           </CardContent>
@@ -503,11 +567,11 @@ export default function GroupsPage() {
           </SheetHeader>
           
           <div className="mt-6 space-y-4">
-            {/* Add User Section */}
+            {/* Add User Section - Shows all non-members */}
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <UserPlus className="w-4 h-4" />
-                Add User to Group
+                Add User to Group ({availableUsers.length} available)
               </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -518,22 +582,31 @@ export default function GroupsPage() {
                   className="pl-9"
                 />
               </div>
-              {addUserSearchQuery && (
-                <div className="border rounded-lg max-h-40 overflow-y-auto">
-                  {availableUsers.length === 0 ? (
-                    <p className="text-sm text-muted-foreground p-3 text-center">No users found</p>
-                  ) : (
-                    availableUsers.map((user) => (
+              <ScrollArea className="h-48 border rounded-lg">
+                {availableUsers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full py-6 text-muted-foreground">
+                    <Users className="w-8 h-8 mb-2 opacity-50" />
+                    <p className="text-sm">No users available to add</p>
+                    <p className="text-xs">All users are already members</p>
+                  </div>
+                ) : (
+                  <div className="p-1">
+                    {availableUsers.map((user) => (
                       <div
                         key={user.id}
-                        className="flex items-center justify-between p-2 hover:bg-muted/50 cursor-pointer transition-colors"
-                        onClick={() => handleAddMember(user.id, user.name)}
+                        className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{user.name}</p>
                           <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                         </div>
-                        <Button variant="ghost" size="sm" className="h-7 gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 gap-1 ml-2"
+                          onClick={() => handleAddMember(user.id, user.name)}
+                          disabled={addMemberMutation.isPending}
+                        >
                           {addMemberMutation.isPending ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
                           ) : (
@@ -544,10 +617,10 @@ export default function GroupsPage() {
                           )}
                         </Button>
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
             </div>
 
             <div className="border-t pt-4">
