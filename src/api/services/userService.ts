@@ -1,5 +1,5 @@
 import apiClient from '../client';
-import { ApiResponse, UserDto, UserPagedResponse } from '../types';
+import { ApiResponse, UserDto, UserPagedResponse, GroupResponseDto } from '../types';
 
 const USERS_BASE = '/api/users';
 
@@ -30,6 +30,15 @@ export const userService = {
   getUser: async (userId: number): Promise<UserDto> => {
     const response = await apiClient.get<ApiResponse<UserDto>>(`${USERS_BASE}/${userId}`);
     return response.data.data!;
+  },
+
+  /**
+   * Get groups for a user
+   * GET /api/users/:id/groups
+   */
+  getUserGroups: async (userId: number): Promise<GroupResponseDto[]> => {
+    const response = await apiClient.get<ApiResponse<GroupResponseDto[]>>(`${USERS_BASE}/${userId}/groups`);
+    return response.data.data || [];
   },
 };
 

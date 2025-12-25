@@ -1,6 +1,6 @@
 // Export all API hooks
 export { useAuthApi } from './useAuth';
-export { useUsers } from './useUsers';
-export { useGroups, useGroupsQuery, useGroup, useCreateGroup, useDeleteGroup } from './useGroups';
+export { useUsers, useUsersQuery, useUserQuery, useUserGroups } from './useUsers';
+export { useGroups, useGroupsQuery, useGroup, useCreateGroup, useUpdateGroup, useDeleteGroup, useGroupMembers, useAddGroupMember, useRemoveGroupMember } from './useGroups';
 export * from './useCms';
-export { useCategories, useCreateCategory, useDeleteCategory } from './useCategories';
+export { useCategories, useCategoriesPaged, useCategory, useCreateCategory, useUpdateCategory, useDeleteCategory } from './useCategories';
