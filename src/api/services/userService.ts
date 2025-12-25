@@ -49,6 +49,22 @@ export const userService = {
   deleteUser: async (userId: number): Promise<void> => {
     await apiClient.delete(`${ADMIN_USERS_BASE}/${userId}`);
   },
+
+  /**
+   * Deactivate a user (admin only)
+   * POST /api/admin/users/:id/deactivate
+   */
+  deactivateUser: async (userId: number): Promise<void> => {
+    await apiClient.post(`${ADMIN_USERS_BASE}/${userId}/deactivate`);
+  },
+
+  /**
+   * Activate a user (admin only)
+   * POST /api/admin/users/:id/activate
+   */
+  activateUser: async (userId: number): Promise<void> => {
+    await apiClient.post(`${ADMIN_USERS_BASE}/${userId}/activate`);
+  },
 };
 
 export default userService;

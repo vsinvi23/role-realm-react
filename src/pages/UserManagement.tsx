@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useUsers, useDeleteUser } from '@/api/hooks/useUsers';
+import { useUsers, useDeleteUser, useDeactivateUser, useActivateUser } from '@/api/hooks/useUsers';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { UserTabs } from '@/components/users/UserTabs';
 import { UserTable } from '@/components/users/UserTable';
@@ -35,7 +35,8 @@ export default function UserManagementPage() {
   } = useUsers();
 
   const deleteUserMutation = useDeleteUser();
-
+  const deactivateUserMutation = useDeactivateUser();
+  const activateUserMutation = useActivateUser();
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
@@ -87,7 +88,19 @@ export default function UserManagementPage() {
   };
 
   const handleToggleStatus = async (userId: string, currentStatus: UserStatus) => {
-    toast.info('User status update requires backend API support');
+    try {
+      const numericId = parseInt(userId);
+      if (currentStatus === 'ACTIVE') {
+        await deactivateUserMutation.mutateAsync(numericId);
+        toast.success('User deactivated successfully');
+      } else {
+        await activateUserMutation.mutateAsync(numericId);
+        toast.success('User activated successfully');
+      }
+      fetchUsers({ page: currentPage, size: pageSize });
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update user status');
+    }
   };
 
   const handleDeleteClick = (userId: string) => {

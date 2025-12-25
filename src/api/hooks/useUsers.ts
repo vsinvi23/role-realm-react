@@ -25,6 +25,32 @@ export const useDeleteUser = () => {
   });
 };
 
+/**
+ * Hook to deactivate a user (admin only)
+ */
+export const useDeactivateUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: number) => userService.deactivateUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to activate a user (admin only)
+ */
+export const useActivateUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: number) => userService.activateUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+};
+
 // Helper to map UserDto to UserResponse for backwards compatibility
 function mapUserDtoToResponse(dto: UserDto): UserResponse {
   return {
