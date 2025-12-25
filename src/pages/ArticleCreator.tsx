@@ -64,23 +64,36 @@ export default function ArticleCreator() {
 
   // Load existing data if editing
   useEffect(() => {
+    let objectUrl: string | null = null;
+
+    const loadThumbnail = async (id: number) => {
+      try {
+        const blob = await cmsService.getThumbnail(id);
+        objectUrl = URL.createObjectURL(blob);
+        setThumbnailPreview(objectUrl);
+      } catch (e) {
+        // If thumbnail endpoint is protected, <img src> won't include auth header.
+        // We fetch it via apiClient here so the Authorization header is applied.
+        console.warn('Failed to load thumbnail:', e);
+      }
+    };
+
     if (existingCms && !isDataLoaded) {
       setTitle(existingCms.title || '');
       setDescription(existingCms.description || '');
       setCategoryId(existingCms.categoryId?.toString() || '');
-      
-      // Load thumbnail preview if exists
-      const thumb = existingCms.thumbnailUrl || (existingCms.thumbnailLocation ? cmsService.getThumbnailUrl(existingCms.id) : null);
-      if (thumb) {
-        // If backend returns a relative path, prefix API base URL
-        const fullThumb = thumb.startsWith('http')
-          ? thumb
-          : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}${thumb}`;
-        setThumbnailPreview(fullThumb);
+
+      // Load thumbnail preview (uses authenticated request)
+      if (existingCms.thumbnailUrl || existingCms.thumbnailLocation) {
+        void loadThumbnail(existingCms.id);
       }
-      
+
       setIsDataLoaded(true);
     }
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [existingCms, isDataLoaded]);
 
   // Parse existing body HTML into content blocks
