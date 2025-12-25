@@ -84,9 +84,10 @@ export const useUsers = (): UseUsersReturn => {
     try {
       const data = await userService.getUsers(params);
       setUsers(data.items.map(mapUserDtoToResponse));
-      setTotalElements(data.totalElements);
-      setTotalPages(Math.ceil(data.totalElements / (params?.size || 10)));
-      setCurrentPage(data.currentPage);
+      const total = data.total ?? data.totalElements ?? 0;
+      setTotalElements(total);
+      setTotalPages(Math.ceil(total / (params?.size || 10)));
+      setCurrentPage(data.currentPage ?? 0);
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       setError(axiosError.response?.data?.message || 'Failed to fetch users');
