@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +52,7 @@ import {
 } from '@/api/hooks/useGroups';
 import { useUsersQuery } from '@/api/hooks/useUsers';
 import { useCategoriesPaged } from '@/api/hooks/useCategories';
+import groupService from '@/api/services/groupService';
 import { GroupResponseDto, GroupUserDto } from '@/api/types';
 
 // Content types for group naming
@@ -116,6 +117,38 @@ export default function GroupsPage() {
 
   // Store member counts for each group (fetched separately)
   const [memberCounts, setMemberCounts] = useState<Record<number, number>>({});
+
+  // Fetch member counts for the current page groups so the table shows accurate numbers
+  useEffect(() => {
+    if (!groups.length) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const entries = await Promise.all(
+          groups.map(async (g) => {
+            const members = await groupService.getGroupMembers(g.id);
+            return [g.id, members.length] as const;
+          })
+        );
+
+        if (cancelled) return;
+
+        setMemberCounts((prev) => {
+          const next = { ...prev };
+          for (const [id, count] of entries) next[id] = count;
+          return next;
+        });
+      } catch {
+        // If counts fail to load, fall back to the existing (possibly null) group.users field.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [groups]);
 
   // Generate group name from selections
   const generatedName = useMemo(() => {
@@ -255,8 +288,8 @@ export default function GroupsPage() {
     setMemberCounts(prev => ({ ...prev, [groupId]: count }));
   };
 
-  // Update count when members are fetched
-  useMemo(() => {
+  // Update count when members are fetched (for the open sheet)
+  useEffect(() => {
     if (selectedGroupId && groupMembers) {
       updateMemberCount(selectedGroupId, groupMembers.length);
     }
