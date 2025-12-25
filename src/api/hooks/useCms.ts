@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { cmsService, CmsQueryParams } from '../services/cmsService';
+import { cmsService, mediaService, CmsQueryParams } from '../services/cmsService';
 import { CmsCreateDto, CmsUpdateDto, CmsSubmitRequest, CmsPublishRequest, CmsSendBackRequest } from '../types';
 
 // Query keys
@@ -7,6 +7,7 @@ export const cmsKeys = {
   all: ['cms'] as const,
   list: (params?: CmsQueryParams) => [...cmsKeys.all, 'list', params] as const,
   detail: (id: number) => [...cmsKeys.all, id] as const,
+  body: (id: number) => [...cmsKeys.all, id, 'body'] as const,
 };
 
 /**
@@ -74,8 +75,44 @@ export const useDeleteCms = () => {
   });
 };
 
+// ============================================
+// BODY CONTENT HOOKS
+// ============================================
+
 /**
- * Hook to upload content to a CMS item
+ * Hook to upload body content (HTML) to a CMS item
+ */
+export const useUploadCmsBody = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, content }: { id: number; content: string | File }) => 
+      cmsService.uploadBody(id, content),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: cmsKeys.body(id) });
+      queryClient.invalidateQueries({ queryKey: cmsKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to download body content (HTML) from a CMS item
+ */
+export const useDownloadCmsBody = (id: number, enabled = false) => {
+  return useQuery({
+    queryKey: cmsKeys.body(id),
+    queryFn: () => cmsService.downloadBody(id),
+    enabled: enabled && id > 0,
+  });
+};
+
+// ============================================
+// CONTENT/ATTACHMENT HOOKS
+// ============================================
+
+/**
+ * Hook to upload content/attachment to a CMS item
  */
 export const useUploadCmsContent = () => {
   const queryClient = useQueryClient();
@@ -83,22 +120,6 @@ export const useUploadCmsContent = () => {
   return useMutation({
     mutationFn: ({ id, file }: { id: number; file: File }) => 
       cmsService.uploadContent(id, file),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: cmsKeys.all });
-    },
-  });
-};
-
-/**
- * Hook to upload thumbnail to a CMS item
- */
-export const useUploadCmsThumbnail = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ id, file }: { id: number; file: File }) => 
-      cmsService.uploadThumbnail(id, file),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: cmsKeys.all });
@@ -116,6 +137,43 @@ export const useDownloadCmsContent = (id: number, enabled = false) => {
     enabled: enabled && id > 0,
   });
 };
+
+// ============================================
+// THUMBNAIL HOOKS
+// ============================================
+
+/**
+ * Hook to upload thumbnail to a CMS item
+ */
+export const useUploadCmsThumbnail = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => 
+      cmsService.uploadThumbnail(id, file),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: cmsKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: cmsKeys.all });
+    },
+  });
+};
+
+// ============================================
+// MEDIA HOOKS (for rich editor)
+// ============================================
+
+/**
+ * Hook to upload media (image/video) from the rich editor
+ */
+export const useUploadMedia = () => {
+  return useMutation({
+    mutationFn: (file: File) => mediaService.upload(file),
+  });
+};
+
+// ============================================
+// WORKFLOW HOOKS
+// ============================================
 
 /**
  * Hook to submit CMS for review

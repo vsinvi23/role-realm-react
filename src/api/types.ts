@@ -140,6 +140,13 @@ export interface CmsUpdateDto {
   description?: string;
 }
 
+export interface AttachmentDto {
+  name: string;
+  url: string;
+  mimeType: string;
+  size: number;
+}
+
 export interface CmsResponseDto {
   id: number;
   type: CmsType;
@@ -151,16 +158,32 @@ export interface CmsResponseDto {
   status: CmsStatus;
   title: string | null;
   description: string | null;
+  // Body content (HTML)
+  bodyLocation: string | null;
+  bodyName: string | null;
+  bodyType: string | null;
+  bodySize: number | null;
+  // Main content/attachment file
   contentLocation: string | null;
   contentName: string | null;
   contentType: string | null;
   contentSize: number | null;
+  // Thumbnail
   thumbnailLocation: string | null;
   thumbnailName: string | null;
   thumbnailType: string | null;
   thumbnailSize: number | null;
+  // Attachments array
+  attachments: AttachmentDto[] | null;
   createdAt: string;
   updatedAt: string | null;
+}
+
+export interface MediaUploadResponse {
+  url: string;
+  filename: string;
+  size: number;
+  mimeType: string;
 }
 
 export type CmsPagedResponse = PagedResponse<CmsResponseDto>;

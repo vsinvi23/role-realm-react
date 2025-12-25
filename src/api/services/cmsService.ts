@@ -8,9 +8,11 @@ import {
   CmsSubmitRequest,
   CmsPublishRequest,
   CmsSendBackRequest,
+  MediaUploadResponse,
 } from '../types';
 
 const CMS_BASE = '/api/cms';
+const MEDIA_BASE = '/api/media';
 
 export interface CmsQueryParams {
   page?: number;
@@ -60,15 +62,71 @@ export const cmsService = {
   },
 
   /**
-   * Delete CMS item
+   * Delete CMS item (also deletes all related files from storage)
    * DELETE /api/cms/:id
    */
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`${CMS_BASE}/${id}`);
   },
 
+  // ============================================
+  // BODY CONTENT (HTML) ENDPOINTS
+  // ============================================
+
   /**
-   * Upload content file for a CMS item
+   * Upload body content (HTML) for a CMS item
+   * POST /api/cms/:id/body
+   * Can be multipart/form-data (file) or JSON { content: "<html>..." }
+   */
+  uploadBody: async (id: number, content: string | File): Promise<CmsResponseDto> => {
+    if (typeof content === 'string') {
+      // Send as JSON
+      const response = await apiClient.post<ApiResponse<CmsResponseDto>>(
+        `${CMS_BASE}/${id}/body`,
+        { content },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return response.data.data!;
+    } else {
+      // Send as multipart file
+      const formData = new FormData();
+      formData.append('file', content);
+
+      const response = await apiClient.post<ApiResponse<CmsResponseDto>>(
+        `${CMS_BASE}/${id}/body`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data.data!;
+    }
+  },
+
+  /**
+   * Download body content (HTML) for a CMS item
+   * GET /api/cms/:id/body
+   * Returns HTML string
+   */
+  downloadBody: async (id: number): Promise<string> => {
+    const response = await apiClient.get<string>(`${CMS_BASE}/${id}/body`, {
+      responseType: 'text',
+    });
+    return response.data;
+  },
+
+  // ============================================
+  // CONTENT/ATTACHMENT FILE ENDPOINTS
+  // ============================================
+
+  /**
+   * Upload content file for a CMS item (attachment/video/PDF etc.)
    * POST /api/cms/:id/upload
    */
   uploadContent: async (id: number, file: File): Promise<CmsResponseDto> => {
@@ -98,6 +156,10 @@ export const cmsService = {
     return response.data;
   },
 
+  // ============================================
+  // THUMBNAIL ENDPOINTS
+  // ============================================
+
   /**
    * Upload thumbnail for a CMS item
    * POST /api/cms/:id/thumbnail
@@ -119,7 +181,15 @@ export const cmsService = {
   },
 
   /**
-   * Get thumbnail for a CMS item
+   * Get thumbnail URL for a CMS item
+   * GET /api/cms/:id/thumbnail
+   */
+  getThumbnailUrl: (id: number): string => {
+    return `${CMS_BASE}/${id}/thumbnail`;
+  },
+
+  /**
+   * Download thumbnail for a CMS item
    * GET /api/cms/:id/thumbnail
    */
   getThumbnail: async (id: number): Promise<Blob> => {
@@ -128,6 +198,25 @@ export const cmsService = {
     });
     return response.data;
   },
+
+  // ============================================
+  // ATTACHMENT ENDPOINTS
+  // ============================================
+
+  /**
+   * Download an attachment by name
+   * GET /api/cms/:id/attachments/:name
+   */
+  downloadAttachment: async (id: number, name: string): Promise<Blob> => {
+    const response = await apiClient.get<Blob>(`${CMS_BASE}/${id}/attachments/${encodeURIComponent(name)}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // ============================================
+  // WORKFLOW ENDPOINTS
+  // ============================================
 
   /**
    * Submit CMS for review
@@ -163,6 +252,41 @@ export const cmsService = {
       data
     );
     return response.data.data!;
+  },
+};
+
+// ============================================
+// MEDIA SERVICE (for rich editor images/videos)
+// ============================================
+
+export const mediaService = {
+  /**
+   * Upload media file (image/video) from rich editor
+   * POST /api/media/upload
+   * Returns { url, filename, size, mimeType }
+   */
+  upload: async (file: File): Promise<MediaUploadResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<ApiResponse<MediaUploadResponse>>(
+      `${MEDIA_BASE}/upload`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data.data!;
+  },
+
+  /**
+   * Get media URL
+   * Returns the URL to serve the media file
+   */
+  getMediaUrl: (filename: string): string => {
+    return `${MEDIA_BASE}/${filename}`;
   },
 };
 
