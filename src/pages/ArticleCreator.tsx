@@ -70,8 +70,13 @@ export default function ArticleCreator() {
       setCategoryId(existingCms.categoryId?.toString() || '');
       
       // Load thumbnail preview if exists
-      if (existingCms.thumbnailLocation) {
-        setThumbnailPreview(cmsService.getThumbnailUrl(existingCms.id));
+      const thumb = existingCms.thumbnailUrl || (existingCms.thumbnailLocation ? cmsService.getThumbnailUrl(existingCms.id) : null);
+      if (thumb) {
+        // If backend returns a relative path, prefix API base URL
+        const fullThumb = thumb.startsWith('http')
+          ? thumb
+          : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}${thumb}`;
+        setThumbnailPreview(fullThumb);
       }
       
       setIsDataLoaded(true);
