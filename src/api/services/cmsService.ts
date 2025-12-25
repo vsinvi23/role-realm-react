@@ -11,6 +11,9 @@ import {
   MediaUploadResponse,
 } from '../types';
 
+// API Base URL - needed for building full URLs for images
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 const CMS_BASE = '/api/cms';
 const MEDIA_BASE = '/api/media';
 
@@ -181,11 +184,11 @@ export const cmsService = {
   },
 
   /**
-   * Get thumbnail URL for a CMS item
+   * Get thumbnail URL for a CMS item (full URL with base)
    * GET /api/cms/:id/thumbnail
    */
   getThumbnailUrl: (id: number): string => {
-    return `${CMS_BASE}/${id}/thumbnail`;
+    return `${API_BASE_URL}${CMS_BASE}/${id}/thumbnail`;
   },
 
   /**
