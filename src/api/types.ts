@@ -163,16 +163,19 @@ export interface CmsResponseDto {
   bodyName: string | null;
   bodyType: string | null;
   bodySize: number | null;
+  bodyUrl?: string | null;
   // Main content/attachment file
   contentLocation: string | null;
   contentName: string | null;
   contentType: string | null;
   contentSize: number | null;
+  contentUrl?: string | null;
   // Thumbnail
   thumbnailLocation: string | null;
   thumbnailName: string | null;
   thumbnailType: string | null;
   thumbnailSize: number | null;
+  thumbnailUrl?: string | null;
   // Attachments array
   attachments: AttachmentDto[] | null;
   createdAt: string;
