@@ -32,47 +32,7 @@ import {
 } from '@/api/hooks/useCms';
 import { useCategories } from '@/api/hooks/useCategories';
 import { cmsService } from '@/api/services/cmsService';
-
-/**
- * Convert content blocks to HTML string
- */
-function contentBlocksToHtml(blocks: ContentBlock[]): string {
-  return blocks.map(block => {
-    switch (block.type) {
-      case 'heading1':
-        return `<h1>${escapeHtml(block.content)}</h1>`;
-      case 'heading2':
-        return `<h2>${escapeHtml(block.content)}</h2>`;
-      case 'heading3':
-        return `<h3>${escapeHtml(block.content)}</h3>`;
-      case 'paragraph':
-        return `<p>${escapeHtml(block.content)}</p>`;
-      case 'quote':
-        return `<blockquote>${escapeHtml(block.content)}</blockquote>`;
-      case 'code':
-        return `<pre><code class="language-${block.codeData?.language || 'plaintext'}">${escapeHtml(block.codeData?.code || '')}</code></pre>`;
-      case 'image':
-        return `<figure><img src="${block.imageUrl || ''}" alt="${escapeHtml(block.imageAlt || '')}" />${block.imageAlt ? `<figcaption>${escapeHtml(block.imageAlt)}</figcaption>` : ''}</figure>`;
-      case 'list':
-        return `<ul>${block.listItems?.map(item => `<li>${escapeHtml(item)}</li>`).join('') || ''}</ul>`;
-      case 'ordered-list':
-        return `<ol>${block.listItems?.map(item => `<li>${escapeHtml(item)}</li>`).join('') || ''}</ol>`;
-      case 'divider':
-        return '<hr />';
-      default:
-        return '';
-    }
-  }).join('\n');
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+import { htmlToContentBlocks, contentBlocksToHtml } from '@/lib/htmlParser';
 
 export default function CourseCreator() {
   const navigate = useNavigate();
@@ -118,11 +78,17 @@ export default function CourseCreator() {
     }
   }, [existingCms, isDataLoaded]);
 
-  // Parse existing body HTML into content blocks (basic parsing)
+  // Parse existing body HTML into content blocks
   useEffect(() => {
     if (existingBody && isDataLoaded && contentBlocks.length === 0) {
-      // For now, we'll just show the HTML - a full parser would be needed for complete round-trip
-      console.log('Existing body loaded:', existingBody.substring(0, 100));
+      try {
+        const parsedBlocks = htmlToContentBlocks(existingBody);
+        if (parsedBlocks.length > 0) {
+          setContentBlocks(parsedBlocks);
+        }
+      } catch (error) {
+        console.error('Failed to parse body HTML:', error);
+      }
     }
   }, [existingBody, isDataLoaded, contentBlocks.length]);
 
