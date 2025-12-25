@@ -25,7 +25,8 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
 }: PaginationProps) {
-  const totalPages = Math.ceil(totalItems / pageSize);
+  const safeTotalItems = totalItems || 0;
+  const totalPages = Math.max(1, Math.ceil(safeTotalItems / pageSize));
   
   const getVisiblePages = () => {
     const pages: (number | 'ellipsis')[] = [];
@@ -145,7 +146,7 @@ export function Pagination({
               }
             }}
           />
-          <span className="text-sm text-muted-foreground">{totalItems} Results</span>
+          <span className="text-sm text-muted-foreground">{safeTotalItems} Results</span>
         </div>
       </div>
     </div>

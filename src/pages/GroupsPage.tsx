@@ -338,7 +338,9 @@ export default function GroupsPage() {
                             onClick={() => handleViewUsers(group)}
                           >
                             <Users className="w-3 h-3" />
-                            {memberCounts[group.id] ?? group.users?.length ?? '–'} users
+                            {memberCounts[group.id] !== undefined 
+                              ? memberCounts[group.id] 
+                              : (group.users?.length ?? 0)} users
                           </Button>
                         </TableCell>
                         <TableCell className="text-right space-x-1">
