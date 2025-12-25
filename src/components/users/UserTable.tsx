@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { RoleBadge } from './RoleBadge';
 import { StatusToggle } from './StatusToggle';
 import { UserProfileModal } from './UserProfileModal';
-import { ChevronDown, ChevronUp, History, Edit, MoreHorizontal, Trash2, User } from 'lucide-react';
+import { ChevronDown, ChevronUp, Edit, MoreHorizontal, Trash2, User, UserX, UserCheck } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -151,9 +151,6 @@ export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, on
                 onSort={onSort}
               />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-              Last Login
-            </th>
             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
               Actions
             </th>
@@ -190,21 +187,15 @@ export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, on
               <td className="py-3 px-4 text-muted-foreground text-sm">
                 {format(new Date(user.createdAt), 'MM/dd/yyyy, hh:mm a')}
               </td>
-              <td className="py-3 px-4 text-muted-foreground text-sm">
-                {user.lastLogin 
-                  ? format(new Date(user.lastLogin), 'MM/dd/yyyy, hh:mm a')
-                  : '—'
-                }
-              </td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end gap-1">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <History className="w-4 h-4" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditUser(user)}>
+                        <Edit className="w-4 h-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Login History</TooltipContent>
+                    <TooltipContent>Edit User</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -226,9 +217,18 @@ export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, on
                         View Profile
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onToggleStatus(user.id, user.status)}>
-                        {user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                        {user.status === 'ACTIVE' ? (
+                          <>
+                            <UserX className="w-4 h-4 mr-2" />
+                            Deactivate
+                          </>
+                        ) : (
+                          <>
+                            <UserCheck className="w-4 h-4 mr-2" />
+                            Activate
+                          </>
+                        )}
                       </DropdownMenuItem>
-                      <DropdownMenuItem>Reset Password</DropdownMenuItem>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <DropdownMenuItem 
