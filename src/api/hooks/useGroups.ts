@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupService, GroupQueryParams } from '../services/groupService';
-import { GroupCreateDto, GroupResponseDto } from '../types';
+import { GroupCreateDto, GroupResponseDto, GroupUserDto } from '../types';
 import { AxiosError } from 'axios';
 
 // Query keys
@@ -9,6 +9,7 @@ export const groupKeys = {
   all: ['groups'] as const,
   list: (params?: GroupQueryParams) => [...groupKeys.all, 'list', params] as const,
   detail: (id: number) => [...groupKeys.all, 'detail', id] as const,
+  members: (id: number) => [...groupKeys.all, 'members', id] as const,
 };
 
 /**
@@ -29,6 +30,17 @@ export const useGroup = (id: number, enabled = true) => {
     queryKey: groupKeys.detail(id),
     queryFn: () => groupService.getGroup(id),
     enabled: enabled && id > 0,
+  });
+};
+
+/**
+ * Hook to fetch members of a group
+ */
+export const useGroupMembers = (groupId: number, enabled = true) => {
+  return useQuery({
+    queryKey: groupKeys.members(groupId),
+    queryFn: () => groupService.getGroupMembers(groupId),
+    enabled: enabled && groupId > 0,
   });
 };
 
@@ -71,6 +83,38 @@ export const useDeleteGroup = () => {
     mutationFn: (id: number) => groupService.deleteGroup(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groupKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to add a member to a group (admin only)
+ */
+export const useAddGroupMember = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ groupId, userId }: { groupId: number; userId: number }) => 
+      groupService.addGroupMember(groupId, userId),
+    onSuccess: (_, { groupId }) => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.members(groupId) });
+      queryClient.invalidateQueries({ queryKey: groupKeys.detail(groupId) });
+    },
+  });
+};
+
+/**
+ * Hook to remove a member from a group (admin only)
+ */
+export const useRemoveGroupMember = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ groupId, userId }: { groupId: number; userId: number }) => 
+      groupService.removeGroupMember(groupId, userId),
+    onSuccess: (_, { groupId }) => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.members(groupId) });
+      queryClient.invalidateQueries({ queryKey: groupKeys.detail(groupId) });
     },
   });
 };

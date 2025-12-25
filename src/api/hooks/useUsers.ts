@@ -1,7 +1,16 @@
 import { useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { userService, UserQueryParams } from '../services/userService';
-import { UserResponse, UserDto } from '../types';
+import { UserResponse, UserDto, GroupResponseDto } from '../types';
 import { AxiosError } from 'axios';
+
+// Query keys
+export const userKeys = {
+  all: ['users'] as const,
+  list: (params?: UserQueryParams) => [...userKeys.all, 'list', params] as const,
+  detail: (id: number) => [...userKeys.all, 'detail', id] as const,
+  groups: (id: number) => [...userKeys.all, 'groups', id] as const,
+};
 
 // Helper to map UserDto to UserResponse for backwards compatibility
 function mapUserDtoToResponse(dto: UserDto): UserResponse {
@@ -16,6 +25,38 @@ function mapUserDtoToResponse(dto: UserDto): UserResponse {
     groups: dto.groups,
   };
 }
+
+/**
+ * Hook to fetch paginated users (React Query)
+ */
+export const useUsersQuery = (params?: UserQueryParams) => {
+  return useQuery({
+    queryKey: userKeys.list(params),
+    queryFn: () => userService.getUsers(params),
+  });
+};
+
+/**
+ * Hook to fetch a single user by ID (React Query)
+ */
+export const useUserQuery = (id: number, enabled = true) => {
+  return useQuery({
+    queryKey: userKeys.detail(id),
+    queryFn: () => userService.getUser(id),
+    enabled: enabled && id > 0,
+  });
+};
+
+/**
+ * Hook to fetch groups for a user (React Query)
+ */
+export const useUserGroups = (userId: number, enabled = true) => {
+  return useQuery({
+    queryKey: userKeys.groups(userId),
+    queryFn: () => userService.getUserGroups(userId),
+    enabled: enabled && userId > 0,
+  });
+};
 
 interface UseUsersReturn {
   users: UserResponse[];

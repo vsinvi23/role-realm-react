@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Layers, Plus, Trash2, Loader2, Pencil, Users, UserPlus, X, RefreshCw, Eye, Search } from 'lucide-react';
+import { Layers, Plus, Trash2, Loader2, Pencil, Users, UserPlus, X, RefreshCw, Eye, Search, UserMinus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
@@ -41,7 +41,16 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useGroupsQuery, useCreateGroup, useUpdateGroup, useDeleteGroup, useGroup } from '@/api/hooks/useGroups';
+import { 
+  useGroupsQuery, 
+  useCreateGroup, 
+  useUpdateGroup, 
+  useDeleteGroup, 
+  useGroupMembers, 
+  useAddGroupMember, 
+  useRemoveGroupMember 
+} from '@/api/hooks/useGroups';
+import { useUsersQuery } from '@/api/hooks/useUsers';
 import { useCategoriesPaged } from '@/api/hooks/useCategories';
 import { GroupResponseDto, GroupUserDto } from '@/api/types';
 
@@ -65,9 +74,12 @@ export default function GroupsPage() {
   
   const { data, isLoading, refetch } = useGroupsQuery({ page, size });
   const { data: categoriesData } = useCategoriesPaged({ page: 0, size: 100 });
+  const { data: usersData } = useUsersQuery({ page: 0, size: 100 });
   const createMutation = useCreateGroup();
   const updateMutation = useUpdateGroup();
   const deleteMutation = useDeleteGroup();
+  const addMemberMutation = useAddGroupMember();
+  const removeMemberMutation = useRemoveGroupMember();
 
   // Create mode states
   const [formOpen, setFormOpen] = useState(false);
@@ -86,8 +98,16 @@ export default function GroupsPage() {
 
   // User management sheet
   const [userSheetOpen, setUserSheetOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<GroupResponseDto | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [selectedGroupName, setSelectedGroupName] = useState('');
   const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [addUserSearchQuery, setAddUserSearchQuery] = useState('');
+
+  // Fetch members for selected group
+  const { data: groupMembers, isLoading: membersLoading, refetch: refetchMembers } = useGroupMembers(
+    selectedGroupId || 0,
+    selectedGroupId !== null && userSheetOpen
+  );
 
   const groups = data?.items || [];
   const totalElements = data?.totalElements || 0;
@@ -133,9 +153,11 @@ export default function GroupsPage() {
   };
 
   const handleViewUsers = (group: GroupResponseDto) => {
-    setSelectedGroup(group);
+    setSelectedGroupId(group.id);
+    setSelectedGroupName(group.name);
     setUserSheetOpen(true);
     setUserSearchQuery('');
+    setAddUserSearchQuery('');
   };
 
   const handleSubmit = async () => {
@@ -176,15 +198,54 @@ export default function GroupsPage() {
     }
   };
 
-  // Filter users in selected group based on search
-  const filteredUsers = useMemo(() => {
-    if (!selectedGroup?.users) return [];
-    if (!userSearchQuery.trim()) return selectedGroup.users;
+  const handleAddMember = async (userId: number, userName: string) => {
+    if (!selectedGroupId) return;
+    
+    try {
+      await addMemberMutation.mutateAsync({ groupId: selectedGroupId, userId });
+      toast.success(`Added "${userName}" to group`);
+      refetchMembers();
+      refetch();
+    } catch (error) {
+      toast.error('Failed to add user to group');
+    }
+  };
+
+  const handleRemoveMember = async (userId: number, userName: string) => {
+    if (!selectedGroupId) return;
+    
+    try {
+      await removeMemberMutation.mutateAsync({ groupId: selectedGroupId, userId });
+      toast.success(`Removed "${userName}" from group`);
+      refetchMembers();
+      refetch();
+    } catch (error) {
+      toast.error('Failed to remove user from group');
+    }
+  };
+
+  // Filter members based on search
+  const filteredMembers = useMemo(() => {
+    const members = groupMembers || [];
+    if (!userSearchQuery.trim()) return members;
     const query = userSearchQuery.toLowerCase();
-    return selectedGroup.users.filter(
+    return members.filter(
       u => u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query)
     );
-  }, [selectedGroup, userSearchQuery]);
+  }, [groupMembers, userSearchQuery]);
+
+  // Filter available users for adding (exclude current members)
+  const availableUsers = useMemo(() => {
+    const allUsers = usersData?.items || [];
+    const memberIds = new Set((groupMembers || []).map(m => m.id));
+    const filtered = allUsers.filter(u => !memberIds.has(u.id));
+    
+    if (!addUserSearchQuery.trim()) return filtered.slice(0, 10); // Limit to 10 for performance
+    const query = addUserSearchQuery.toLowerCase();
+    return filtered.filter(
+      u => u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query)
+    ).slice(0, 10);
+  }, [usersData, groupMembers, addUserSearchQuery]);
 
   return (
     <DashboardLayout>
@@ -430,61 +491,123 @@ export default function GroupsPage() {
 
       {/* User Management Sheet */}
       <Sheet open={userSheetOpen} onOpenChange={setUserSheetOpen}>
-        <SheetContent className="sm:max-w-md">
+        <SheetContent className="sm:max-w-lg">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              {selectedGroup?.name}
+              {selectedGroupName}
             </SheetTitle>
             <SheetDescription>
-              {selectedGroup?.users?.length || 0} user{(selectedGroup?.users?.length || 0) !== 1 ? 's' : ''} in this group
+              {groupMembers?.length || 0} user{(groupMembers?.length || 0) !== 1 ? 's' : ''} in this group
             </SheetDescription>
           </SheetHeader>
           
           <div className="mt-6 space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users..."
-                value={userSearchQuery}
-                onChange={(e) => setUserSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            {/* User List */}
-            <ScrollArea className="h-[calc(100vh-280px)]">
-              {filteredUsers.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">
-                    {userSearchQuery ? 'No users match your search' : 'No users in this group'}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredUsers.map((user) => (
-                    <div 
-                      key={user.id} 
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{user.name}</p>
-                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+            {/* Add User Section */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <UserPlus className="w-4 h-4" />
+                Add User to Group
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users to add..."
+                  value={addUserSearchQuery}
+                  onChange={(e) => setAddUserSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              {addUserSearchQuery && (
+                <div className="border rounded-lg max-h-40 overflow-y-auto">
+                  {availableUsers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground p-3 text-center">No users found</p>
+                  ) : (
+                    availableUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center justify-between p-2 hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => handleAddMember(user.id, user.name)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" className="h-7 gap-1">
+                          {addMemberMutation.isPending ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <>
+                              <Plus className="w-3 h-3" />
+                              Add
+                            </>
+                          )}
+                        </Button>
                       </div>
-                      <Badge variant="secondary" className="ml-2">ID: {user.id}</Badge>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               )}
-            </ScrollArea>
+            </div>
 
-            {/* Add User Section */}
-            <div className="pt-4 border-t">
-              <p className="text-sm text-muted-foreground mb-2">
-                To add users to this group, go to User Management and assign groups to individual users.
-              </p>
+            <div className="border-t pt-4">
+              <Label className="text-sm font-medium mb-2 block">Current Members</Label>
+              {/* Search Members */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search members..."
+                  value={userSearchQuery}
+                  onChange={(e) => setUserSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              {/* Member List */}
+              <ScrollArea className="h-[calc(100vh-450px)]">
+                {membersLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  </div>
+                ) : filteredMembers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm">
+                      {userSearchQuery ? 'No users match your search' : 'No users in this group'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredMembers.map((user) => (
+                      <div 
+                        key={user.id} 
+                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{user.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleRemoveMember(user.id, user.name)}
+                          disabled={removeMemberMutation.isPending}
+                        >
+                          {removeMemberMutation.isPending ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <>
+                              <UserMinus className="w-3 h-3 mr-1" />
+                              Remove
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
             </div>
           </div>
         </SheetContent>
