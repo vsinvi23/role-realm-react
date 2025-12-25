@@ -2,6 +2,7 @@ import apiClient from '../client';
 import { ApiResponse, UserDto, UserPagedResponse, GroupResponseDto } from '../types';
 
 const USERS_BASE = '/api/users';
+const ADMIN_USERS_BASE = '/api/admin/users';
 
 export interface UserQueryParams {
   page?: number;
@@ -39,6 +40,14 @@ export const userService = {
   getUserGroups: async (userId: number): Promise<GroupResponseDto[]> => {
     const response = await apiClient.get<ApiResponse<GroupResponseDto[]>>(`${USERS_BASE}/${userId}/groups`);
     return response.data.data || [];
+  },
+
+  /**
+   * Delete a user (admin only)
+   * DELETE /api/admin/users/:id
+   */
+  deleteUser: async (userId: number): Promise<void> => {
+    await apiClient.delete(`${ADMIN_USERS_BASE}/${userId}`);
   },
 };
 

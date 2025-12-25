@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useUsers } from '@/api/hooks/useUsers';
+import { useUsers, useDeleteUser } from '@/api/hooks/useUsers';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { UserTabs } from '@/components/users/UserTabs';
 import { UserTable } from '@/components/users/UserTable';
@@ -11,6 +11,16 @@ import { Input } from '@/components/ui/input';
 import { UserPlus, Search, Loader2 } from 'lucide-react';
 import { UserStatus, UserResponse } from '@/api/types';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type TabStatus = 'all' | 'active' | 'deactivated' | 'invited';
 
@@ -24,6 +34,8 @@ export default function UserManagementPage() {
     fetchUsers,
   } = useUsers();
 
+  const deleteUserMutation = useDeleteUser();
+
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
@@ -32,6 +44,10 @@ export default function UserManagementPage() {
   const [pageSize, setPageSize] = useState(10);
   const [sortBy, setSortBy] = useState<string>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  
+  // Delete confirmation dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserResponse | null>(null);
 
   useEffect(() => {
     fetchUsers({ page: 0, size: pageSize });
@@ -40,14 +56,14 @@ export default function UserManagementPage() {
   const counts = useMemo(() => ({
     all: totalElements,
     active: users.filter(u => u.status === 'ACTIVE').length,
-    deactivated: users.filter(u => u.status === 'DEACTIVATED').length,
+    deactivated: users.filter(u => u.status === 'DEACTIVATED' || u.status === 'INACTIVE').length,
     invited: users.filter(u => u.status === 'PENDING').length,
   }), [users, totalElements]);
 
   const filteredUsers = useMemo(() => {
     let result = users;
     if (activeTab === 'active') result = result.filter(u => u.status === 'ACTIVE');
-    else if (activeTab === 'deactivated') result = result.filter(u => u.status === 'DEACTIVATED');
+    else if (activeTab === 'deactivated') result = result.filter(u => u.status === 'DEACTIVATED' || u.status === 'INACTIVE');
     else if (activeTab === 'invited') result = result.filter(u => u.status === 'PENDING');
     
     if (searchQuery) {
@@ -74,8 +90,27 @@ export default function UserManagementPage() {
     toast.info('User status update requires backend API support');
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    toast.info('User deletion requires backend API support');
+  const handleDeleteClick = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setUserToDelete(user);
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      await deleteUserMutation.mutateAsync(parseInt(userToDelete.id));
+      toast.success(`User "${userToDelete.name}" deleted successfully`);
+      fetchUsers({ page: currentPage, size: pageSize });
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to delete user');
+    } finally {
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    }
   };
 
   const handleEditUser = (user: UserResponse) => {
@@ -121,7 +156,7 @@ export default function UserManagementPage() {
             </div>
           ) : (
             <>
-              <UserTable users={filteredUsers} sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} onToggleStatus={handleToggleStatus} onDeleteUser={handleDeleteUser} onEditUser={handleEditUser} />
+              <UserTable users={filteredUsers} sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} onToggleStatus={handleToggleStatus} onDeleteUser={handleDeleteClick} onEditUser={handleEditUser} />
               <div className="border-t border-border px-4">
                 <Pagination currentPage={currentPage + 1} pageSize={pageSize} totalItems={totalElements} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} />
               </div>
@@ -132,6 +167,28 @@ export default function UserManagementPage() {
 
       <InviteUserModal open={inviteModalOpen} onClose={() => setInviteModalOpen(false)} onUserCreated={handleUserCreated} />
       <EditUserModal open={editModalOpen} onClose={() => { setEditModalOpen(false); setEditingUser(null); }} user={editingUser} onSave={handleSaveUser} />
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{userToDelete?.name}"? This action cannot be undone and will permanently remove the user from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

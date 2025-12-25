@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService, UserQueryParams } from '../services/userService';
 import { UserResponse, UserDto, GroupResponseDto } from '../types';
 import { AxiosError } from 'axios';
@@ -10,6 +10,19 @@ export const userKeys = {
   list: (params?: UserQueryParams) => [...userKeys.all, 'list', params] as const,
   detail: (id: number) => [...userKeys.all, 'detail', id] as const,
   groups: (id: number) => [...userKeys.all, 'groups', id] as const,
+};
+
+/**
+ * Hook to delete a user (admin only)
+ */
+export const useDeleteUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: number) => userService.deleteUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
 };
 
 // Helper to map UserDto to UserResponse for backwards compatibility
