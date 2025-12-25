@@ -197,14 +197,6 @@ export function UserTable({ users, sortBy, sortOrder, onSort, onToggleStatus, on
                     </TooltipTrigger>
                     <TooltipContent>Edit User</TooltipContent>
                   </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditUser(user)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Edit User</TooltipContent>
-                  </Tooltip>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
