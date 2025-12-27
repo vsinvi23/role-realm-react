@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { authService } from '@/api/services';
+import { userService } from '@/api/services/userService';
 import { 
   getAuthToken, 
   clearAllAuthData, 
@@ -7,7 +8,10 @@ import {
   getUserData,
   isAuthenticated as checkIsAuthenticated 
 } from '@/api/client';
-import { UserStatus } from '@/api/types';
+import { UserStatus, GroupResponseDto } from '@/api/types';
+
+// Cache keys
+const GROUPS_CACHE_KEY = 'user_groups_cache';
 
 interface AuthUser {
   id: number;
@@ -27,6 +31,11 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  // User groups
+  userGroups: GroupResponseDto[];
+  groupNames: string[];
+  hasNoGroups: boolean;
+  hasGroup: (groupName: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +50,10 @@ const defaultAuthContext: AuthContextType = {
   logout: () => {},
   isAuthenticated: false,
   isAdmin: false,
+  userGroups: [],
+  groupNames: [],
+  hasNoGroups: true,
+  hasGroup: () => false,
 };
 
 export const useAuth = () => {
@@ -77,15 +90,49 @@ const decodeToken = (token: string): { sub?: string; email?: string; userId?: nu
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userGroups, setUserGroups] = useState<GroupResponseDto[]>([]);
+
+  // Fetch user groups from API and cache them
+  const fetchUserGroups = useCallback(async (userId: number) => {
+    if (!userId || userId <= 0) return;
+    
+    try {
+      const groups = await userService.getUserGroups(userId);
+      setUserGroups(groups);
+      // Cache in sessionStorage
+      sessionStorage.setItem(GROUPS_CACHE_KEY, JSON.stringify(groups));
+    } catch (error) {
+      console.error('Failed to fetch user groups:', error);
+      setUserGroups([]);
+    }
+  }, []);
+
+  // Clear groups (on logout)
+  const clearUserGroups = useCallback(() => {
+    setUserGroups([]);
+    sessionStorage.removeItem(GROUPS_CACHE_KEY);
+  }, []);
 
   // Check for existing session on mount
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       // Use the centralized auth check
       if (checkIsAuthenticated()) {
         const storedUser = getUserData<AuthUser>();
         if (storedUser) {
           setUser(storedUser);
+          // Load cached groups
+          const cachedGroups = sessionStorage.getItem(GROUPS_CACHE_KEY);
+          if (cachedGroups) {
+            try {
+              setUserGroups(JSON.parse(cachedGroups));
+            } catch {
+              sessionStorage.removeItem(GROUPS_CACHE_KEY);
+            }
+          } else {
+            // Fetch groups if not cached
+            fetchUserGroups(storedUser.id);
+          }
         } else {
           // Token exists but no user data - clear everything
           clearAllAuthData();
@@ -95,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     checkAuth();
-  }, []);
+  }, [fetchUserGroups]);
 
   // Set up token expiry checker
   useEffect(() => {
@@ -130,7 +177,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     authService.logout();
     setUser(null);
     clearAllAuthData();
-  }, []);
+    clearUserGroups();
+  }, [clearUserGroups]);
 
   const login = async (email: string, password: string): Promise<{ error?: string }> => {
     setIsLoading(true);
@@ -156,6 +204,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         setUser(authUser);
         setUserData(authUser);
+        // Fetch user groups after login
+        fetchUserGroups(authUser.id);
         return {};
       }
       
@@ -226,6 +276,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return { error: `${provider} login is not yet configured. Please use email/password.` };
   };
 
+  // Derived group values
+  const groupNames = userGroups.map(g => g.name.toUpperCase());
+  const isAdmin = groupNames.includes('ADMIN');
+  const hasNoGroups = userGroups.length === 0;
+  const hasGroup = useCallback((groupName: string) => {
+    return groupNames.includes(groupName.toUpperCase());
+  }, [groupNames]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -236,7 +294,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         socialLogin,
         logout: handleLogout,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin',
+        isAdmin,
+        userGroups,
+        groupNames,
+        hasNoGroups,
+        hasGroup,
       }}
     >
       {children}
