@@ -33,6 +33,7 @@ import {
 import { useCategories } from '@/api/hooks/useCategories';
 import { cmsService } from '@/api/services/cmsService';
 import { htmlToContentBlocks, contentBlocksToHtml } from '@/lib/htmlParser';
+import { useAllowedCategories } from '@/hooks/useAllowedCategories';
 
 export default function CourseCreator() {
   const navigate = useNavigate();
@@ -50,7 +51,9 @@ export default function CourseCreator() {
   const { data: existingCms, isLoading: cmsLoading } = useCmsById(editId ? parseInt(editId) : 0, !!editId);
   const { data: existingBody } = useDownloadCmsBody(editId ? parseInt(editId) : 0, !!editId && !!existingCms?.bodyLocation);
 
-  const categories = categoriesData || [];
+  // Filter categories based on user's group permissions
+  const allCategories = categoriesData || [];
+  const categories = useAllowedCategories(allCategories, 'COURSE');
 
   // Form state
   const [title, setTitle] = useState('');
