@@ -24,37 +24,43 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavItem {
   icon: React.ElementType;
   label: string;
   href: string;
+  adminOnly?: boolean;
+  contentOnly?: boolean; // For non-admin users with groups
 }
 
 interface NavSection {
   icon: React.ElementType;
   label: string;
-  href: string; // Main section link
+  href: string;
   items: NavItem[];
+  adminOnly?: boolean;
 }
 
 import { FolderTree, BookOpen, FileText, ListTodo, Layers } from 'lucide-react';
 
+// All menu items with access control flags
 const standaloneItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: ListTodo, label: 'My Tasks', href: '/my-tasks' },
-  { icon: BookOpen, label: 'Courses', href: '/courses' },
-  { icon: FileText, label: 'Articles', href: '/articles' },
-  { icon: Layers, label: 'Groups', href: '/groups' },
-  { icon: FolderTree, label: 'Categories', href: '/categories' },
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', adminOnly: true },
+  { icon: ListTodo, label: 'My Tasks', href: '/my-tasks', adminOnly: true },
+  { icon: BookOpen, label: 'Courses', href: '/courses', contentOnly: true },
+  { icon: FileText, label: 'Articles', href: '/articles', contentOnly: true },
+  { icon: Layers, label: 'Groups', href: '/groups', adminOnly: true },
+  { icon: FolderTree, label: 'Categories', href: '/categories', adminOnly: true },
 ];
 
 const userManagementSection: NavSection = {
   icon: UserCog,
   label: 'User Management',
   href: '/user-management',
+  adminOnly: true,
   items: [
-    { icon: Users, label: 'Manage Users', href: '/users' },
+    { icon: Users, label: 'Manage Users', href: '/users', adminOnly: true },
   ],
 };
 
@@ -62,13 +68,14 @@ const settingsSection: NavSection = {
   icon: Settings,
   label: 'Settings',
   href: '/settings',
+  adminOnly: true,
   items: [
-    { icon: Globe, label: 'System Settings', href: '/settings' },
+    { icon: Globe, label: 'System Settings', href: '/settings', adminOnly: true },
   ],
 };
 
 const otherNavItems: NavItem[] = [
-  { icon: BarChart3, label: 'Analytics', href: '/analytics' },
+  { icon: BarChart3, label: 'Analytics', href: '/analytics', adminOnly: true },
 ];
 
 const bottomNavItems: NavItem[] = [
@@ -78,7 +85,22 @@ const bottomNavItems: NavItem[] = [
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { isAdmin, hasNoGroups, isAuthenticated } = useAuth();
   
+  // Determine what the user can see
+  // Admin: everything
+  // User with groups (non-admin): only Courses and Articles
+  // User with no groups: nothing (no sidebar items)
+  const canSeeAdminItems = isAdmin;
+  const canSeeContentItems = isAuthenticated && !hasNoGroups; // Any user with groups can see content
+
+  // Filter items based on permissions
+  const visibleStandaloneItems = standaloneItems.filter(item => {
+    if (item.adminOnly) return canSeeAdminItems;
+    if (item.contentOnly) return canSeeContentItems;
+    return true;
+  });
+
   // Check if current route is within user management section
   const isUserManagementActive = 
     location.pathname === userManagementSection.href ||
@@ -124,53 +146,124 @@ export function AppSidebar() {
     isActive: boolean,
     isOpen: boolean,
     setIsOpen: (open: boolean) => void
-  ) => (
-    <li>
-      {collapsed ? (
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <Link
-              to={section.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
-                isActive && 'bg-sidebar-accent text-sidebar-foreground'
-              )}
-            >
-              <section.icon className="w-5 h-5 flex-shrink-0" />
-            </Link>
-          </TooltipTrigger>
-          <TooltipContent side="right" className="bg-sidebar text-sidebar-foreground">
-            {section.label}
-          </TooltipContent>
-        </Tooltip>
-      ) : (
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <CollapsibleTrigger asChild>
-            <button
-              className={cn(
-                'w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
-                isActive && 'text-sidebar-foreground bg-sidebar-accent'
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <section.icon className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm font-medium">{section.label}</span>
-              </div>
-              <ChevronDown
+  ) => {
+    // Check if section should be visible
+    if (section.adminOnly && !canSeeAdminItems) return null;
+
+    return (
+      <li>
+        {collapsed ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Link
+                to={section.href}
                 className={cn(
-                  'w-4 h-4 transition-transform duration-200',
-                  isOpen && 'rotate-180'
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+                  isActive && 'bg-sidebar-accent text-sidebar-foreground'
                 )}
-              />
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-1 space-y-1">
-            {section.items.map((item) => renderNavItem(item, true))}
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-    </li>
-  );
+              >
+                <section.icon className="w-5 h-5 flex-shrink-0" />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="bg-sidebar text-sidebar-foreground">
+              {section.label}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+            <CollapsibleTrigger asChild>
+              <button
+                className={cn(
+                  'w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
+                  isActive && 'text-sidebar-foreground bg-sidebar-accent'
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <section.icon className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm font-medium">{section.label}</span>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    'w-4 h-4 transition-transform duration-200',
+                    isOpen && 'rotate-180'
+                  )}
+                />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-1 space-y-1">
+              {section.items.map((item) => renderNavItem(item, true))}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+      </li>
+    );
+  };
+
+  // If user has no groups, show minimal sidebar
+  if (hasNoGroups && isAuthenticated) {
+    return (
+      <aside
+        className={cn(
+          'flex flex-col bg-sidebar h-screen transition-all duration-300 border-r border-sidebar-border',
+          collapsed ? 'w-16' : 'w-64'
+        )}
+      >
+        {/* Logo */}
+        <Link to="/" className="flex items-center h-16 px-4 border-b border-sidebar-border hover:bg-sidebar-accent/50 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+              <span className="text-sidebar-primary-foreground font-bold text-sm">GG</span>
+            </div>
+            {!collapsed && (
+              <span className="font-semibold text-sidebar-foreground animate-fade-in">
+                GeekGully
+              </span>
+            )}
+          </div>
+        </Link>
+
+        {/* No access message */}
+        <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin">
+          <div className="px-4 py-8 text-center">
+            {!collapsed && (
+              <div className="text-sidebar-muted text-sm">
+                <p className="mb-2">No group assigned</p>
+                <p className="text-xs">Contact admin for access</p>
+              </div>
+            )}
+          </div>
+        </nav>
+
+        {/* Bottom Navigation */}
+        <div className="border-t border-sidebar-border py-4 px-2">
+          <ul className="space-y-1">
+            {bottomNavItems.map((item) => (
+              <li key={item.href}>{renderNavItem(item)}</li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Collapse Toggle */}
+        <div className="p-2 border-t border-sidebar-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-center text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <>
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                <span className="text-sm">Collapse</span>
+              </>
+            )}
+          </Button>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside
@@ -196,21 +289,23 @@ export function AppSidebar() {
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin">
         <ul className="space-y-1 px-2">
-          {/* Standalone items */}
-          {standaloneItems.map((item) => (
+          {/* Filtered standalone items */}
+          {visibleStandaloneItems.map((item) => (
             <li key={item.href}>{renderNavItem(item)}</li>
           ))}
 
-          {/* User Management Section */}
+          {/* User Management Section - Admin only */}
           {renderSection(userManagementSection, isUserManagementActive, userMgmtOpen, setUserMgmtOpen)}
 
-          {/* Settings Section */}
+          {/* Settings Section - Admin only */}
           {renderSection(settingsSection, isSettingsActive, settingsOpen, setSettingsOpen)}
 
-          {/* Other nav items */}
-          {otherNavItems.map((item) => (
-            <li key={item.href}>{renderNavItem(item)}</li>
-          ))}
+          {/* Other nav items - filtered */}
+          {otherNavItems
+            .filter(item => !item.adminOnly || canSeeAdminItems)
+            .map((item) => (
+              <li key={item.href}>{renderNavItem(item)}</li>
+            ))}
         </ul>
       </nav>
 
