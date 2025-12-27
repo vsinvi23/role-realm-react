@@ -199,70 +199,9 @@ export function AppSidebar() {
     );
   };
 
-  // If user has no groups, show minimal sidebar
+  // If user has no groups, don't show sidebar at all
   if (hasNoGroups && isAuthenticated) {
-    return (
-      <aside
-        className={cn(
-          'flex flex-col bg-sidebar h-screen transition-all duration-300 border-r border-sidebar-border',
-          collapsed ? 'w-16' : 'w-64'
-        )}
-      >
-        {/* Logo */}
-        <Link to="/" className="flex items-center h-16 px-4 border-b border-sidebar-border hover:bg-sidebar-accent/50 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
-              <span className="text-sidebar-primary-foreground font-bold text-sm">GG</span>
-            </div>
-            {!collapsed && (
-              <span className="font-semibold text-sidebar-foreground animate-fade-in">
-                GeekGully
-              </span>
-            )}
-          </div>
-        </Link>
-
-        {/* No access message */}
-        <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin">
-          <div className="px-4 py-8 text-center">
-            {!collapsed && (
-              <div className="text-sidebar-muted text-sm">
-                <p className="mb-2">No group assigned</p>
-                <p className="text-xs">Contact admin for access</p>
-              </div>
-            )}
-          </div>
-        </nav>
-
-        {/* Bottom Navigation */}
-        <div className="border-t border-sidebar-border py-4 px-2">
-          <ul className="space-y-1">
-            {bottomNavItems.map((item) => (
-              <li key={item.href}>{renderNavItem(item)}</li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Collapse Toggle */}
-        <div className="p-2 border-t border-sidebar-border">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-center text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent"
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            {collapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <>
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                <span className="text-sm">Collapse</span>
-              </>
-            )}
-          </Button>
-        </div>
-      </aside>
-    );
+    return null;
   }
 
   return (
