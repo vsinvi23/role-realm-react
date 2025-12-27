@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading, hasNoGroups } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -24,8 +24,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  // Users without any groups should be redirected to home page
+  if (hasNoGroups) {
+    return <Navigate to="/" replace />;
+  }
+
   if (requireAdmin && !isAdmin) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
